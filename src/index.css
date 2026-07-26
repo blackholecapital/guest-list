@@ -869,3 +869,344 @@ nav a:hover {
     flex: 1;
   }
 }
+
+.notice-box {
+  margin-bottom: 18px;
+  padding: 15px 18px;
+  border-radius: 14px;
+  border: 1px solid rgba(214, 174, 88, 0.28);
+  background: rgba(214, 174, 88, 0.08);
+  color: #f7ddb0;
+}
+
+.action-icon {
+  text-decoration: none;
+}
+
+.guest-toolbar {
+  margin-bottom: 18px;
+}
+
+.search-input {
+  width: 100%;
+  margin-bottom: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: #111;
+  color: #fff;
+}
+
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.filter-pill {
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: #141414;
+  color: #ddd;
+  cursor: pointer;
+}
+
+.filter-pill.is-active {
+  border-color: rgba(214, 174, 88, 0.45);
+  background: rgba(214, 174, 88, 0.08);
+}
+
+.filter-pill.success.is-active {
+  border-color: rgba(55, 214, 106, 0.45);
+  background: rgba(55, 214, 106, 0.1);
+}
+
+.filter-pill.danger.is-active {
+  border-color: rgba(215, 21, 42, 0.55);
+  background: rgba(215, 21, 42, 0.12);
+}
+
+.guest-list-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.guest-list-card {
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background:
+    linear-gradient(145deg, rgba(215, 21, 42, 0.06), transparent),
+    var(--panel);
+}
+
+.guest-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.guest-card-top strong,
+.guest-card-meta strong {
+  display: block;
+}
+
+.guest-card-top span {
+  display: block;
+  color: var(--muted);
+}
+
+.guest-card-meta {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.guest-card-meta small {
+  display: block;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.guest-card-actions {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.flag-note {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(215, 21, 42, 0.12);
+  border: 1px solid rgba(215, 21, 42, 0.35);
+  color: #ffb4bf;
+  font-size: 14px;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.status-success {
+  background: rgba(55, 214, 106, 0.12);
+  border: 1px solid rgba(55, 214, 106, 0.35);
+  color: #7ff0a4;
+}
+
+.status-danger {
+  background: rgba(215, 21, 42, 0.12);
+  border: 1px solid rgba(215, 21, 42, 0.35);
+  color: #ff9cad;
+}
+
+.status-neutral {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #ddd;
+}
+
+.status-inline {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.success-text {
+  color: #7ff0a4;
+}
+
+.danger-text {
+  color: #ff9cad;
+}
+
+.promoter-performance-card {
+  margin-top: 18px;
+}
+
+.promoter-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.promoter-stat-card {
+  padding: 18px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background:
+    linear-gradient(145deg, rgba(215, 21, 42, 0.06), transparent),
+    #101010;
+}
+
+.promoter-stat-card > strong {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 18px;
+}
+
+.promoter-stat-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.promoter-stat-row:last-child {
+  border-bottom: 0;
+}
+
+.promoter-panel {
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background:
+    linear-gradient(145deg, rgba(215, 21, 42, 0.06), transparent),
+    #101010;
+  padding: 16px;
+}
+
+.promoter-admin-headline {
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+
+.mini-stat-grid {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.mini-stat-grid article {
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.mini-stat-grid small,
+.recent-registration-row small {
+  display: block;
+  color: var(--muted);
+}
+
+.mini-stat-grid strong {
+  display: block;
+  margin-top: 6px;
+}
+
+.mini-subheading {
+  margin-top: 16px;
+  margin-bottom: 10px;
+  color: var(--gold);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 12px;
+}
+
+.recent-registration-list {
+  display: grid;
+  gap: 10px;
+}
+
+.recent-registration-row {
+  padding: 12px 14px;
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.recent-registration-row strong,
+.recent-registration-row span {
+  display: block;
+}
+
+.recent-registration-row > div:last-child {
+  text-align: right;
+}
+
+.shell-header,
+header nav,
+.shell-nav {
+  gap: 16px;
+}
+
+@media (max-width: 820px) {
+  .guest-list-grid,
+  .promoter-stats-grid,
+  .mini-stat-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .shell-header {
+    flex-wrap: wrap;
+  }
+
+  .shell-header nav,
+  .shell-nav,
+  header nav {
+    display: flex !important;
+    width: 100%;
+    overflow-x: auto;
+    white-space: nowrap;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    padding-bottom: 6px;
+    scrollbar-width: none;
+  }
+
+  .shell-header nav a,
+  .shell-nav a,
+  header nav a {
+    flex: 0 0 auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .guest-list-grid,
+  .promoter-stats-grid,
+  .mini-stat-grid,
+  .guest-card-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .recent-registration-row,
+  .guest-card-top,
+  .promoter-admin-item {
+    grid-template-columns: 1fr;
+    flex-direction: column;
+  }
+
+  .recent-registration-row {
+    align-items: flex-start;
+  }
+
+  .recent-registration-row > div:last-child {
+    text-align: left;
+  }
+
+  .venue-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .venue-info-card {
+    min-height: auto;
+  }
+}

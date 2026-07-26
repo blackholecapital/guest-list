@@ -16,42 +16,6 @@ type ApiFailure = {
 
 type ApiResponse<T> = ApiSuccess<T> | ApiFailure;
 
-type Guest = {
-  id: number;
-  name: string;
-  phone: string;
-  party_size: number;
-  promoter_name: string;
-  promoter_slug: string;
-  status: "registered" | "checked_in";
-  created_at: string;
-  checked_in_at: string | null;
-};
-
-type GuestListData = {
-  guests: Guest[];
-};
-
-type StatsData = {
-  summary: {
-    totalRegistrations: number;
-    totalPartySize: number;
-    checkedIn: number;
-    notCheckedIn: number;
-    conversionPercentage: number;
-  };
-  promoters: Array<{
-    promoterId: number;
-    promoterName: string;
-    promoterSlug: string;
-    registrations: number;
-    totalPartySize: number;
-    checkedIn: number;
-    notCheckedIn: number;
-    conversionPercentage: number;
-  }>;
-};
-
 const VENUE = {
   name: "Scores Tampa",
   address: "2310 N. Dale Mabry Highway, Tampa, Florida 33607",
@@ -71,6 +35,225 @@ const VENUE = {
     { id: 3, name: "James R.", slug: "james" },
   ],
 };
+
+type DemoGuest = {
+  id: number;
+  name: string;
+  phone: string;
+  promoterName: string;
+  promoterSlug: string;
+  partySize: number;
+  registeredAt: string;
+  status: "checked_in" | "pending" | "flagged";
+  checkedInAt: string | null;
+  flagReason: string | null;
+};
+
+const MAPS_URL = `https://maps.google.com/?q=${encodeURIComponent(VENUE.address)}`;
+const TEL_URL = "tel:+18138757112";
+
+const DEMO_GUESTS: DemoGuest[] = [
+  {
+    id: 1,
+    name: "John Smith",
+    phone: "(813) 555-0101",
+    promoterName: "Mike D.",
+    promoterSlug: "mike",
+    partySize: 1,
+    registeredAt: "2026-07-26T18:08:00-04:00",
+    status: "checked_in",
+    checkedInAt: "2026-07-26T22:04:00-04:00",
+    flagReason: null,
+  },
+  {
+    id: 2,
+    name: "Ashley Carter",
+    phone: "(813) 555-0102",
+    promoterName: "Mike D.",
+    promoterSlug: "mike",
+    partySize: 2,
+    registeredAt: "2026-07-26T18:42:00-04:00",
+    status: "checked_in",
+    checkedInAt: "2026-07-26T22:17:00-04:00",
+    flagReason: null,
+  },
+  {
+    id: 3,
+    name: "Chris Bennett",
+    phone: "(813) 555-0103",
+    promoterName: "Mike D.",
+    promoterSlug: "mike",
+    partySize: 1,
+    registeredAt: "2026-07-26T19:05:00-04:00",
+    status: "checked_in",
+    checkedInAt: "2026-07-26T22:33:00-04:00",
+    flagReason: null,
+  },
+  {
+    id: 4,
+    name: "Monica Reed",
+    phone: "(813) 555-0104",
+    promoterName: "Mike D.",
+    promoterSlug: "mike",
+    partySize: 1,
+    registeredAt: "2026-07-26T19:21:00-04:00",
+    status: "checked_in",
+    checkedInAt: "2026-07-26T22:49:00-04:00",
+    flagReason: null,
+  },
+
+  {
+    id: 5,
+    name: "Jessica Miller",
+    phone: "(813) 555-0201",
+    promoterName: "Sarah K.",
+    promoterSlug: "sarah",
+    partySize: 2,
+    registeredAt: "2026-07-26T18:15:00-04:00",
+    status: "checked_in",
+    checkedInAt: "2026-07-26T22:11:00-04:00",
+    flagReason: null,
+  },
+  {
+    id: 6,
+    name: "David Lee",
+    phone: "(813) 555-0202",
+    promoterName: "Sarah K.",
+    promoterSlug: "sarah",
+    partySize: 1,
+    registeredAt: "2026-07-26T18:51:00-04:00",
+    status: "checked_in",
+    checkedInAt: "2026-07-26T22:22:00-04:00",
+    flagReason: null,
+  },
+  {
+    id: 7,
+    name: "Amanda Taylor",
+    phone: "(813) 555-0203",
+    promoterName: "Sarah K.",
+    promoterSlug: "sarah",
+    partySize: 1,
+    registeredAt: "2026-07-26T19:14:00-04:00",
+    status: "checked_in",
+    checkedInAt: "2026-07-26T22:38:00-04:00",
+    flagReason: null,
+  },
+  {
+    id: 8,
+    name: "Brian Wilson",
+    phone: "(813) 555-0204",
+    promoterName: "Sarah K.",
+    promoterSlug: "sarah",
+    partySize: 2,
+    registeredAt: "2026-07-26T19:48:00-04:00",
+    status: "flagged",
+    checkedInAt: null,
+    flagReason: "Attempted registration inside restricted venue zone.",
+  },
+
+  {
+    id: 9,
+    name: "Maria Garcia",
+    phone: "(813) 555-0301",
+    promoterName: "James R.",
+    promoterSlug: "james",
+    partySize: 1,
+    registeredAt: "2026-07-26T18:11:00-04:00",
+    status: "checked_in",
+    checkedInAt: "2026-07-26T22:09:00-04:00",
+    flagReason: null,
+  },
+  {
+    id: 10,
+    name: "Nick Torres",
+    phone: "(813) 555-0302",
+    promoterName: "James R.",
+    promoterSlug: "james",
+    partySize: 2,
+    registeredAt: "2026-07-26T18:47:00-04:00",
+    status: "checked_in",
+    checkedInAt: "2026-07-26T22:18:00-04:00",
+    flagReason: null,
+  },
+  {
+    id: 11,
+    name: "Olivia Brooks",
+    phone: "(813) 555-0303",
+    promoterName: "James R.",
+    promoterSlug: "james",
+    partySize: 1,
+    registeredAt: "2026-07-26T19:02:00-04:00",
+    status: "checked_in",
+    checkedInAt: "2026-07-26T22:41:00-04:00",
+    flagReason: null,
+  },
+  {
+    id: 12,
+    name: "Trevor Hall",
+    phone: "(813) 555-0304",
+    promoterName: "James R.",
+    promoterSlug: "james",
+    partySize: 1,
+    registeredAt: "2026-07-26T19:39:00-04:00",
+    status: "flagged",
+    checkedInAt: null,
+    flagReason: "Rejected by restricted-radius rule.",
+  },
+];
+
+const DEMO_STATS = {
+  summary: {
+    totalRegistrations: 12,
+    totalPartySize: 16,
+    checkedIn: 10,
+    notCheckedIn: 2,
+    conversionPercentage: 83.3,
+  },
+  promoters: [
+    {
+      promoterId: 1,
+      promoterName: "Mike D.",
+      promoterSlug: "mike",
+      registrations: 4,
+      totalPartySize: 5,
+      checkedIn: 4,
+      notCheckedIn: 0,
+      redFlags: 0,
+      conversionPercentage: 100,
+    },
+    {
+      promoterId: 2,
+      promoterName: "Sarah K.",
+      promoterSlug: "sarah",
+      registrations: 4,
+      totalPartySize: 6,
+      checkedIn: 3,
+      notCheckedIn: 1,
+      redFlags: 1,
+      conversionPercentage: 75,
+    },
+    {
+      promoterId: 3,
+      promoterName: "James R.",
+      promoterSlug: "james",
+      registrations: 4,
+      totalPartySize: 5,
+      checkedIn: 3,
+      notCheckedIn: 1,
+      redFlags: 1,
+      conversionPercentage: 75,
+    },
+  ],
+};
+
+function formatDateTime(value: string) {
+  return new Date(value).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
 
 async function api<T>(
   url: string,
@@ -97,29 +280,6 @@ async function api<T>(
   }
 
   return body;
-}
-
-function formatPhone(phone: string): string {
-  const digits = phone.replace(/\D/g, "");
-
-  if (digits.length === 10) {
-    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
-  }
-
-  return phone;
-}
-
-function formatTime(value: string): string {
-  const date = new Date(value.replace(" ", "T") + "Z");
-
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return date.toLocaleTimeString([], {
-    hour: "numeric",
-    minute: "2-digit",
-  });
 }
 
 function Shell({
@@ -350,72 +510,115 @@ function PromoterPage({ promoterSlug }: { promoterSlug: string }) {
 }
 
 function GuestListPage() {
-  const [guests, setGuests] = useState<Guest[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [checkingIn, setCheckingIn] = useState<number | null>(null);
+  const [guests, setGuests] = useState<DemoGuest[]>(DEMO_GUESTS);
+  const [notice, setNotice] = useState<string | null>(
+    "Showing demo guest-list data until live records are available.",
+  );
+  const [filter, setFilter] = useState<"all" | "checked_in" | "pending" | "flagged">("all");
+  const [search, setSearch] = useState("");
 
   const loadGuests = useCallback(async () => {
-    const result = await api<GuestListData>("/api/guest-list");
+    try {
+      const result = await api<any>("/api/guest-list");
 
-    if ("error" in result) {
-      setError(result.error.message);
-      setLoading(false);
-      return;
+      if ("error" in result) {
+        setGuests(DEMO_GUESTS);
+        setNotice("Showing demo guest-list data until live records are available.");
+        return;
+      }
+
+      const payload = result.data as any;
+      const rawGuests = Array.isArray(payload?.guests) ? payload.guests : [];
+
+      if (rawGuests.length === 0) {
+        setGuests(DEMO_GUESTS);
+        setNotice("Showing demo guest-list data until live records are available.");
+        return;
+      }
+
+      const mapped: DemoGuest[] = rawGuests.map((guest: any, index: number) => ({
+        id: Number(guest.id ?? index + 1),
+        name: String(guest.name ?? "Guest"),
+        phone: String(guest.phone ?? ""),
+        promoterName: String(guest.promoter ?? guest.promoterName ?? "Promoter"),
+        promoterSlug: String(guest.promoterSlug ?? "promoter"),
+        partySize: Number(guest.partySize ?? 1),
+        registeredAt: String(guest.createdAt ?? guest.registeredAt ?? new Date().toISOString()),
+        status:
+          guest.status === "checked_in"
+            ? "checked_in"
+            : guest.status === "flagged"
+              ? "flagged"
+              : "pending",
+        checkedInAt: guest.checkedInAt ?? guest.checked_in_at ?? null,
+        flagReason: guest.flagReason ?? null,
+      }));
+
+      setGuests(mapped);
+      setNotice(null);
+    } catch {
+      setGuests(DEMO_GUESTS);
+      setNotice("Showing demo guest-list data until live records are available.");
     }
-
-    setGuests(result.data.guests);
-    setError("");
-    setLoading(false);
   }, []);
 
   useEffect(() => {
     void loadGuests();
-
-    const interval = window.setInterval(() => {
+    const timer = window.setInterval(() => {
       void loadGuests();
     }, 10000);
 
-    return () => window.clearInterval(interval);
+    return () => window.clearInterval(timer);
   }, [loadGuests]);
 
-  async function checkIn(guestId: number) {
-    setCheckingIn(guestId);
+  const counts = useMemo(() => {
+    return {
+      all: guests.length,
+      checked_in: guests.filter((guest) => guest.status === "checked_in").length,
+      pending: guests.filter((guest) => guest.status === "pending").length,
+      flagged: guests.filter((guest) => guest.status === "flagged").length,
+    };
+  }, [guests]);
 
-    const result = await api<{
-      guestId: number;
-      status: string;
-      checkedInAt: string | null;
-    }>("/api/door-checkin", {
-      method: "POST",
-      body: JSON.stringify({ guestId }),
+  const filteredGuests = useMemo(() => {
+    return guests.filter((guest) => {
+      const matchesFilter = filter === "all" ? true : guest.status === filter;
+      const haystack =
+        `${guest.name} ${guest.phone} ${guest.promoterName}`.toLowerCase();
+      const matchesSearch = haystack.includes(search.trim().toLowerCase());
+      return matchesFilter && matchesSearch;
     });
+  }, [filter, guests, search]);
 
-    if ("error" in result) {
-      setError(result.error.message);
-      setCheckingIn(null);
-      return;
-    }
-
+  async function handleCheckIn(guestId: number) {
     setGuests((current) =>
       current.map((guest) =>
         guest.id === guestId
           ? {
               ...guest,
               status: "checked_in",
-              checked_in_at: result.data.checkedInAt,
+              checkedInAt: new Date().toISOString(),
             }
           : guest,
       ),
     );
 
-    setCheckingIn(null);
-  }
+    try {
+      const result = await api<any>("/api/door-checkin", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ guestId }),
+      });
 
-  const activeCount = useMemo(
-    () => guests.filter((guest) => guest.status !== "checked_in").length,
-    [guests],
-  );
+      if ("error" in result) {
+        setNotice("Guest checked in locally for demo mode.");
+      }
+    } catch {
+      setNotice("Guest checked in locally for demo mode.");
+    }
+  }
 
   return (
     <Shell>
@@ -425,86 +628,181 @@ function GuestListPage() {
             <p className="eyebrow">Door operations</p>
             <h1>Guest List</h1>
             <p className="muted">
-              {activeCount} waiting · refreshes every 10 seconds
+              Live list for the door tablet. Polling every 10 seconds.
             </p>
           </div>
-
-          <button className="secondary-button" onClick={() => void loadGuests()}>
-            Refresh
-          </button>
         </div>
 
-        {error && <div className="error-box">{error}</div>}
+        {notice && <div className="notice-box">{notice}</div>}
 
-        {loading ? (
-          <div className="empty-state">Loading guest list...</div>
-        ) : guests.length === 0 ? (
-          <div className="empty-state">No guests yet.</div>
-        ) : (
-          <div className="guest-table">
-            {guests.map((guest) => (
-              <article
-                className={`guest-row ${
-                  guest.status === "checked_in" ? "checked" : ""
-                }`}
-                key={guest.id}
-              >
-                <div className="guest-main">
+        <section className="guest-toolbar">
+          <input
+            className="search-input"
+            type="search"
+            placeholder="Search name, phone, or promoter"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
+
+          <div className="filter-row">
+            <button
+              className={`filter-pill ${filter === "all" ? "is-active" : ""}`}
+              type="button"
+              onClick={() => setFilter("all")}
+            >
+              All ({counts.all})
+            </button>
+            <button
+              className={`filter-pill ${filter === "checked_in" ? "is-active success" : ""}`}
+              type="button"
+              onClick={() => setFilter("checked_in")}
+            >
+              Checked In ({counts.checked_in})
+            </button>
+            <button
+              className={`filter-pill ${filter === "pending" ? "is-active" : ""}`}
+              type="button"
+              onClick={() => setFilter("pending")}
+            >
+              Pending ({counts.pending})
+            </button>
+            <button
+              className={`filter-pill ${filter === "flagged" ? "is-active danger" : ""}`}
+              type="button"
+              onClick={() => setFilter("flagged")}
+            >
+              Red Flags ({counts.flagged})
+            </button>
+          </div>
+        </section>
+
+        <section className="guest-list-grid">
+          {filteredGuests.map((guest) => (
+            <article className="guest-list-card" key={guest.id}>
+              <div className="guest-card-top">
+                <div>
                   <strong>{guest.name}</strong>
-                  <span>{formatPhone(guest.phone)}</span>
+                  <span>{guest.phone}</span>
                 </div>
 
+                <span
+                  className={`status-badge ${
+                    guest.status === "checked_in"
+                      ? "status-success"
+                      : guest.status === "flagged"
+                        ? "status-danger"
+                        : "status-neutral"
+                  }`}
+                >
+                  {guest.status === "checked_in"
+                    ? "Checked In"
+                    : guest.status === "flagged"
+                      ? "Red Flag"
+                      : "Pending"}
+                </span>
+              </div>
+
+              <div className="guest-card-meta">
                 <div>
                   <small>Promoter</small>
-                  <strong>{guest.promoter_name}</strong>
+                  <strong>{guest.promoterName}</strong>
                 </div>
-
                 <div>
                   <small>Party</small>
-                  <strong>{guest.party_size}</strong>
+                  <strong>{guest.partySize}</strong>
                 </div>
-
                 <div>
-                  <small>Added</small>
-                  <strong>{formatTime(guest.created_at)}</strong>
+                  <small>Registered</small>
+                  <strong>{formatDateTime(guest.registeredAt)}</strong>
                 </div>
+              </div>
 
-                <div className="guest-action">
-                  {guest.status === "checked_in" ? (
-                    <span className="checked-badge">✓ Checked in</span>
-                  ) : (
-                    <button
-                      className="checkin-button"
-                      disabled={checkingIn === guest.id}
-                      onClick={() => void checkIn(guest.id)}
-                    >
-                      {checkingIn === guest.id ? "Checking in..." : "Check In"}
-                    </button>
-                  )}
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
+              {guest.flagReason && (
+                <div className="flag-note">{guest.flagReason}</div>
+              )}
+
+              <div className="guest-card-actions">
+                {guest.status === "pending" ? (
+                  <button
+                    className="primary-button"
+                    type="button"
+                    onClick={() => void handleCheckIn(guest.id)}
+                  >
+                    Check In
+                  </button>
+                ) : guest.status === "checked_in" ? (
+                  <span className="status-inline success-text">
+                    ✓ Clean conversion
+                  </span>
+                ) : (
+                  <span className="status-inline danger-text">
+                    ⚑ Geofence red flag
+                  </span>
+                )}
+              </div>
+            </article>
+          ))}
+        </section>
       </main>
     </Shell>
   );
 }
 
 function StatsPage() {
-  const [data, setData] = useState<StatsData | null>(null);
-  const [error, setError] = useState("");
+  const [data, setData] = useState(DEMO_STATS);
+  const [notice, setNotice] = useState<string | null>(
+    "Showing demo statistics until live data is available.",
+  );
 
-  useEffect(() => {
-    void api<StatsData>("/api/stats").then((result) => {
+  const loadStats = useCallback(async () => {
+    try {
+      const result = await api<any>("/api/stats");
+
       if ("error" in result) {
-        setError(result.error.message);
+        setData(DEMO_STATS);
+        setNotice("Showing demo statistics until live data is available.");
         return;
       }
 
-      setData(result.data);
-    });
+      const payload = result.data as any;
+      if (!payload?.summary || !Array.isArray(payload?.promoters)) {
+        setData(DEMO_STATS);
+        setNotice("Showing demo statistics until live data is available.");
+        return;
+      }
+
+      const liveStats = {
+        summary: {
+          totalRegistrations: Number(payload.summary.totalRegistrations ?? 0),
+          totalPartySize: Number(payload.summary.totalPartySize ?? 0),
+          checkedIn: Number(payload.summary.checkedIn ?? 0),
+          notCheckedIn: Number(payload.summary.notCheckedIn ?? 0),
+          conversionPercentage: Number(payload.summary.conversionPercentage ?? 0),
+        },
+        promoters: payload.promoters.map((promoter: any) => ({
+          promoterId: Number(promoter.promoterId ?? 0),
+          promoterName: String(promoter.promoterName ?? "Promoter"),
+          promoterSlug: String(promoter.promoterSlug ?? "promoter"),
+          registrations: Number(promoter.registrations ?? 0),
+          totalPartySize: Number(promoter.totalPartySize ?? 0),
+          checkedIn: Number(promoter.checkedIn ?? 0),
+          notCheckedIn: Number(promoter.notCheckedIn ?? 0),
+          redFlags: Number(promoter.notCheckedIn ?? 0),
+          conversionPercentage: Number(promoter.conversionPercentage ?? 0),
+        })),
+      };
+
+      setData(liveStats);
+      setNotice(null);
+    } catch {
+      setData(DEMO_STATS);
+      setNotice("Showing demo statistics until live data is available.");
+    }
   }, []);
+
+  useEffect(() => {
+    void loadStats();
+  }, [loadStats]);
 
   return (
     <Shell>
@@ -518,7 +816,15 @@ function StatsPage() {
 
         <section className="venue-strip">
           <article className="venue-info-card">
-            <span className="venue-icon">⌖</span>
+            <a
+              className="venue-icon action-icon"
+              href={MAPS_URL}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Open Scores Tampa in maps"
+            >
+              ⌖
+            </a>
             <div>
               <small>Venue</small>
               <strong>{VENUE.address}</strong>
@@ -526,14 +832,20 @@ function StatsPage() {
           </article>
 
           <article className="venue-info-card">
-            <span className="venue-icon">☎</span>
+            <a
+              className="venue-icon action-icon"
+              href={TEL_URL}
+              aria-label="Call Scores Tampa"
+            >
+              ☎
+            </a>
             <div>
               <small>Phone</small>
               <strong>{VENUE.phone}</strong>
             </div>
           </article>
 
-          <article className="venue-info-card hours-card">
+          <article className="venue-info-card">
             <span className="venue-icon">◷</span>
             <div>
               <small>Tonight</small>
@@ -542,71 +854,68 @@ function StatsPage() {
           </article>
         </section>
 
-        {error && <div className="error-box">{error}</div>}
+        {notice && <div className="notice-box">{notice}</div>}
 
-        {!data && !error ? (
-          <div className="empty-state">Loading stats...</div>
-        ) : data ? (
-          <>
-            <section className="stat-grid">
-              <StatCard
-                label="Registrations"
-                value={data.summary.totalRegistrations}
-              />
-              <StatCard
-                label="Total guests"
-                value={data.summary.totalPartySize}
-              />
-              <StatCard
-                label="Checked in"
-                value={data.summary.checkedIn}
-              />
-              <StatCard
-                label="Conversion"
-                value={`${data.summary.conversionPercentage}%`}
-              />
-            </section>
+        <section className="stat-grid">
+          <StatCard
+            label="Registrations"
+            value={data.summary.totalRegistrations}
+          />
+          <StatCard
+            label="Total Guests"
+            value={data.summary.totalPartySize}
+          />
+          <StatCard
+            label="Checked In"
+            value={data.summary.checkedIn}
+          />
+          <StatCard
+            label="Conversion"
+            value={`${data.summary.conversionPercentage}%`}
+          />
+        </section>
 
-            <section className="data-card">
-              <div className="stats-header">
-                <span>Promoter</span>
-                <span>Registrations</span>
-                <span>Party total</span>
-                <span>Checked in</span>
-                <span>Conversion</span>
-              </div>
+        <section className="data-card promoter-performance-card">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">Promoter performance</p>
+              <h2>By Promoter</h2>
+            </div>
+          </div>
 
-              {data.promoters.map((promoter) => (
-                <div className="stats-row" key={promoter.promoterId}>
-                  <strong>{promoter.promoterName}</strong>
+          <div className="promoter-stats-grid">
+            {data.promoters.map((promoter) => (
+              <article className="promoter-stat-card" key={promoter.promoterSlug}>
+                <strong>{promoter.promoterName}</strong>
+
+                <div className="promoter-stat-row">
+                  <span>Registrations</span>
                   <span>{promoter.registrations}</span>
+                </div>
+
+                <div className="promoter-stat-row">
+                  <span>Total Guests</span>
                   <span>{promoter.totalPartySize}</span>
+                </div>
+
+                <div className="promoter-stat-row">
+                  <span>Checked In</span>
                   <span>{promoter.checkedIn}</span>
+                </div>
+
+                <div className="promoter-stat-row">
+                  <span>Red Flags</span>
+                  <span>{(promoter as any).redFlags ?? 0}</span>
+                </div>
+
+                <div className="promoter-stat-row">
+                  <span>Conversion</span>
                   <span>{promoter.conversionPercentage}%</span>
                 </div>
-              ))}
-            </section>
-          </>
-        ) : (
-          <section className="dashboard-preview">
-            <article className="stat-card">
-              <small>Registrations</small>
-              <strong>—</strong>
-            </article>
-            <article className="stat-card">
-              <small>Total guests</small>
-              <strong>—</strong>
-            </article>
-            <article className="stat-card">
-              <small>Checked in</small>
-              <strong>—</strong>
-            </article>
-            <article className="stat-card">
-              <small>Conversion</small>
-              <strong>—</strong>
-            </article>
-          </section>
-        )}
+              </article>
+            ))}
+          </div>
+        </section>
       </main>
     </Shell>
   );
@@ -628,33 +937,22 @@ function StatCard({
 }
 
 function AdminPage() {
-  const promoters = [
-    {
-      id: 1,
-      name: "Mike D.",
-      slug: "mike",
-    },
-    {
-      id: 2,
-      name: "Sarah K.",
-      slug: "sarah",
-    },
-    {
-      id: 3,
-      name: "James R.",
-      slug: "james",
-    },
-  ];
+  const promoterRows = VENUE.promoters.map((promoter) => {
+    const stats =
+      DEMO_STATS.promoters.find(
+        (entry) => entry.promoterSlug === promoter.slug,
+      ) ?? DEMO_STATS.promoters[0];
 
-  const hours = [
-    ["Sunday", "6:00 PM – 3:00 AM"],
-    ["Monday", "6:00 PM – 3:00 AM"],
-    ["Tuesday", "6:00 PM – 3:00 AM"],
-    ["Wednesday", "6:00 PM – 3:00 AM"],
-    ["Thursday", "6:00 PM – 3:00 AM"],
-    ["Friday", "6:00 PM – 3:00 AM"],
-    ["Saturday", "6:00 PM – 3:00 AM"],
-  ];
+    const recentGuests = DEMO_GUESTS.filter(
+      (guest) => guest.promoterSlug === promoter.slug,
+    );
+
+    return {
+      promoter,
+      stats,
+      recentGuests,
+    };
+  });
 
   function copyPromoterLink(slug: string) {
     const url = `${window.location.origin}/p/${slug}`;
@@ -666,57 +964,49 @@ function AdminPage() {
       <main className="page wide">
         <div className="page-heading">
           <div>
-            <p className="eyebrow">Venue operations</p>
-            <h1>Admin Dashboard</h1>
-            <p className="muted">
-              Scores Tampa guest-list configuration and promoter links.
-            </p>
+            <p className="eyebrow">Read-only</p>
+            <h1>Admin Config</h1>
           </div>
         </div>
 
-        <section className="admin-grid admin-top-grid">
-          <article className="data-card config-card">
+        <div className="admin-grid admin-top-grid">
+          <section className="data-card config-card">
             <div className="section-heading">
               <div>
-                <p className="eyebrow">Venue</p>
-                <h2>Scores Tampa</h2>
+                <p className="eyebrow">Venue details</p>
+                <h2>{VENUE.name}</h2>
               </div>
             </div>
 
             <dl>
               <div>
                 <dt>Address</dt>
-                <dd>
-                  2310 N. Dale Mabry Highway, Tampa, Florida 33607
-                </dd>
+                <dd>{VENUE.address}</dd>
               </div>
-
               <div>
                 <dt>Phone</dt>
-                <dd>(813) 875-7912</dd>
+                <dd>
+                  <a href={TEL_URL}>{VENUE.phone}</a>
+                </dd>
               </div>
-
               <div>
                 <dt>Restricted registration radius</dt>
                 <dd>457 meters</dd>
               </div>
-
               <div>
                 <dt>Registration rule</dt>
                 <dd>
-                  Guest-list submissions are blocked inside the restricted
-                  venue zone.
+                  Registrations made inside the restricted zone are rejected.
                 </dd>
               </div>
-
               <div>
                 <dt>Duplicate rule</dt>
                 <dd>One registration per phone number per night.</dd>
               </div>
             </dl>
-          </article>
+          </section>
 
-          <article className="data-card config-card">
+          <section className="data-card config-card">
             <div className="section-heading">
               <div>
                 <p className="eyebrow">Club hours</p>
@@ -725,114 +1015,115 @@ function AdminPage() {
             </div>
 
             <div className="hours-list">
-              {hours.map(([day, time]) => (
+              {VENUE.hours.map(([day, time]) => (
                 <div className="hours-row" key={day}>
                   <strong>{day}</strong>
                   <span>{time}</span>
                 </div>
               ))}
             </div>
-          </article>
-        </section>
+          </section>
+        </div>
 
-        <section
-          className="data-card promoter-admin-card"
-          id="promoters"
-        >
+        <section className="data-card promoter-admin-card" id="promoters">
           <div className="section-heading">
             <div>
               <p className="eyebrow">Promoter management</p>
               <h2>Promoter QR Links</h2>
               <p className="muted">
-                Each printed QR code should point to its promoter-specific
-                destination.
+                Demo stats and recent registrations are shown below each link.
               </p>
             </div>
           </div>
 
           <div className="promoter-admin-grid">
-            {promoters.map((promoter) => {
-              const fullUrl =
-                `${window.location.origin}/p/${promoter.slug}`;
+            {promoterRows.map(({ promoter, stats, recentGuests }) => (
+              <article className="promoter-panel" key={promoter.slug}>
+                <div className="promoter-panel-head">
+                  <div className="promoter-admin-item promoter-admin-headline">
+                    <div className="promoter-avatar">
+                      {promoter.name.charAt(0)}
+                    </div>
 
-              return (
-                <article
-                  className="promoter-admin-item"
-                  key={promoter.id}
-                >
-                  <div className="promoter-avatar">
-                    {promoter.name.charAt(0)}
+                    <div className="promoter-admin-copy">
+                      <strong>{promoter.name}</strong>
+                      <code>/p/{promoter.slug}</code>
+                      <small>{window.location.origin}/p/{promoter.slug}</small>
+                    </div>
+
+                    <div className="promoter-actions">
+                      <button
+                        className="secondary-button compact-button"
+                        type="button"
+                        onClick={() => copyPromoterLink(promoter.slug)}
+                      >
+                        Copy Link
+                      </button>
+
+                      <a
+                        className="primary-button compact-button"
+                        href={`/p/${promoter.slug}`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Open
+                      </a>
+                    </div>
                   </div>
+                </div>
 
-                  <div className="promoter-admin-copy">
-                    <strong>{promoter.name}</strong>
-                    <code>/p/{promoter.slug}</code>
-                    <small>{fullUrl}</small>
-                  </div>
+                <div className="mini-stat-grid">
+                  <article>
+                    <small>Registrations</small>
+                    <strong>{stats.registrations}</strong>
+                  </article>
+                  <article>
+                    <small>Total Guests</small>
+                    <strong>{stats.totalPartySize}</strong>
+                  </article>
+                  <article>
+                    <small>Checked In</small>
+                    <strong>{stats.checkedIn}</strong>
+                  </article>
+                  <article>
+                    <small>Conversion</small>
+                    <strong>{stats.conversionPercentage}%</strong>
+                  </article>
+                </div>
 
-                  <div className="promoter-actions">
-                    <span className="active-badge">Active</span>
+                <div className="mini-subheading">Recent registrations</div>
 
-                    <button
-                      className="secondary-button compact-button"
-                      type="button"
-                      onClick={() => copyPromoterLink(promoter.slug)}
-                    >
-                      Copy Link
-                    </button>
+                <div className="recent-registration-list">
+                  {recentGuests.map((guest) => (
+                    <div className="recent-registration-row" key={guest.id}>
+                      <div>
+                        <strong>{guest.name}</strong>
+                        <span>{formatDateTime(guest.registeredAt)}</span>
+                      </div>
 
-                    <a
-                      className="primary-button compact-button"
-                      href={`/p/${promoter.slug}`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Open
-                    </a>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        </section>
-
-        <section className="data-card config-card security-card">
-          <div className="section-heading">
-            <div>
-              <p className="eyebrow">QR protection</p>
-              <h2>Current MVP Rules</h2>
-            </div>
-          </div>
-
-          <div className="security-grid">
-            <article>
-              <strong>Restricted venue zone</strong>
-              <p>
-                Registrations made within 457 meters of Scores Tampa are
-                rejected.
-              </p>
-            </article>
-
-            <article>
-              <strong>Nightly phone limit</strong>
-              <p>
-                A phone number can join the guest list only once per night.
-              </p>
-            </article>
-
-            <article>
-              <strong>Single door check-in</strong>
-              <p>
-                Once checked in, the registration remains consumed.
-              </p>
-            </article>
-
-            <article>
-              <strong>Promoter attribution</strong>
-              <p>
-                Every registration records the promoter QR link used.
-              </p>
-            </article>
+                      <div>
+                        <small>{guest.phone}</small>
+                        <span
+                          className={`status-badge ${
+                            guest.status === "checked_in"
+                              ? "status-success"
+                              : guest.status === "flagged"
+                                ? "status-danger"
+                                : "status-neutral"
+                          }`}
+                        >
+                          {guest.status === "checked_in"
+                            ? "Clean"
+                            : guest.status === "flagged"
+                              ? "Red Flag"
+                              : "Pending"}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </article>
+            ))}
           </div>
         </section>
       </main>

@@ -1210,3 +1210,82 @@ header nav,
     min-height: auto;
   }
 }
+
+.venue-editor-card,
+.hours-editor-card {
+  padding: 26px;
+  margin-bottom: 18px;
+}
+
+.admin-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.admin-form-grid label {
+  display: grid;
+  gap: 8px;
+  color: #d5d5d5;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.admin-form-grid input,
+.hours-editor-row input {
+  width: 100%;
+  padding: 14px 15px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: #0c0c0c;
+  color: white;
+}
+
+.full-field {
+  grid-column: 1 / -1;
+}
+
+.admin-form-actions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.hours-editor-list {
+  display: grid;
+  gap: 10px;
+}
+
+.hours-editor-row {
+  display: grid;
+  grid-template-columns: 140px 1fr auto 1fr;
+  gap: 12px;
+  align-items: center;
+}
+
+@media (max-width: 650px) {
+  .admin-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .full-field {
+    grid-column: auto;
+  }
+
+  .admin-form-actions {
+    flex-direction: column;
+  }
+
+  .admin-form-actions button {
+    width: 100%;
+  }
+
+  .hours-editor-row {
+    grid-template-columns: 1fr;
+  }
+
+  .hours-editor-row span {
+    display: none;
+  }
+}

@@ -937,26 +937,143 @@ function StatCard({
 }
 
 function AdminPage() {
-  const promoterRows = VENUE.promoters.map((promoter) => {
-    const stats =
-      DEMO_STATS.promoters.find(
-        (entry) => entry.promoterSlug === promoter.slug,
-      ) ?? DEMO_STATS.promoters[0];
+  const [adminKey, setAdminKey] = useState(
+    () => window.sessionStorage.getItem("guest-list-admin-key") ?? "",
+  );
 
-    const recentGuests = DEMO_GUESTS.filter(
-      (guest) => guest.promoterSlug === promoter.slug,
-    );
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
+  const [isError, setIsError] = useState(false);
 
-    return {
-      promoter,
-      stats,
-      recentGuests,
-    };
+  const [venue, setVenue] = useState({
+    name: VENUE.name,
+    address: VENUE.address,
+    phone: VENUE.phone,
+    latitude: 27.962,
+    longitude: -82.506,
+    radiusMeters: 457,
   });
 
+  const [hours, setHours] = useState(
+    VENUE.hours.map(([day, time]) => ({
+      day,
+      open: time.split(" – ")[0] ?? "6:00 PM",
+      close: time.split(" – ")[1] ?? "3:00 AM",
+    })),
+  );
+
+  useEffect(() => {
+    void api<any>("/api/config").then((result) => {
+      if ("error" in result) {
+        return;
+      }
+
+      const remote = result.data?.venue;
+
+      if (!remote) {
+        return;
+      }
+
+      setVenue({
+        name: String(remote.name ?? ""),
+        address: String(remote.address ?? ""),
+        phone: String(remote.phone ?? ""),
+        latitude: Number(remote.latitude ?? 0),
+        longitude: Number(remote.longitude ?? 0),
+        radiusMeters: Number(remote.radiusMeters ?? 457),
+      });
+
+      if (Array.isArray(remote.hours) && remote.hours.length > 0) {
+        setHours(remote.hours);
+      }
+    });
+  }, []);
+
+  function updateVenue(
+    field: keyof typeof venue,
+    value: string,
+  ) {
+    setVenue((current) => ({
+      ...current,
+      [field]:
+        field === "latitude" ||
+        field === "longitude" ||
+        field === "radiusMeters"
+          ? Number(value)
+          : value,
+    }));
+  }
+
+  function useCurrentLocation() {
+    setMessage("");
+    setIsError(false);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setVenue((current) => ({
+          ...current,
+          latitude: Number(position.coords.latitude.toFixed(7)),
+          longitude: Number(position.coords.longitude.toFixed(7)),
+        }));
+
+        setMessage("Venue coordinates updated from this device.");
+      },
+      () => {
+        setIsError(true);
+        setMessage("Could not read the current location.");
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 0,
+      },
+    );
+  }
+
+  async function saveVenue(event: FormEvent) {
+    event.preventDefault();
+
+    setSaving(true);
+    setMessage("");
+    setIsError(false);
+
+    window.sessionStorage.setItem(
+      "guest-list-admin-key",
+      adminKey,
+    );
+
+    try {
+      const result = await api<any>("/api/config", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Admin-Key": adminKey,
+        },
+        body: JSON.stringify({
+          ...venue,
+          hours,
+        }),
+      });
+
+      if ("error" in result) {
+        setIsError(true);
+        setMessage(result.error.message);
+        return;
+      }
+
+      setMessage("Venue configuration saved.");
+    } catch {
+      setIsError(true);
+      setMessage("Venue configuration could not be saved.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   function copyPromoterLink(slug: string) {
-    const url = `${window.location.origin}/p/${slug}`;
-    void navigator.clipboard.writeText(url);
+    void navigator.clipboard.writeText(
+      `${window.location.origin}/p/${slug}`,
+    );
   }
 
   return (
@@ -964,163 +1081,233 @@ function AdminPage() {
       <main className="page wide">
         <div className="page-heading">
           <div>
-            <p className="eyebrow">Read-only</p>
-            <h1>Admin Config</h1>
+            <p className="eyebrow">Venue configuration</p>
+            <h1>Admin</h1>
+            <p className="muted">
+              Configure this deployment for any nightclub or venue.
+            </p>
           </div>
         </div>
 
-        <div className="admin-grid admin-top-grid">
-          <section className="data-card config-card">
-            <div className="section-heading">
-              <div>
-                <p className="eyebrow">Venue details</p>
-                <h2>{VENUE.name}</h2>
-              </div>
-            </div>
-
-            <dl>
-              <div>
-                <dt>Address</dt>
-                <dd>{VENUE.address}</dd>
-              </div>
-              <div>
-                <dt>Phone</dt>
-                <dd>
-                  <a href={TEL_URL}>{VENUE.phone}</a>
-                </dd>
-              </div>
-              <div>
-                <dt>Restricted registration radius</dt>
-                <dd>457 meters</dd>
-              </div>
-              <div>
-                <dt>Registration rule</dt>
-                <dd>
-                  Registrations made inside the restricted zone are rejected.
-                </dd>
-              </div>
-              <div>
-                <dt>Duplicate rule</dt>
-                <dd>One registration per phone number per night.</dd>
-              </div>
-            </dl>
-          </section>
-
-          <section className="data-card config-card">
-            <div className="section-heading">
-              <div>
-                <p className="eyebrow">Club hours</p>
-                <h2>Weekly Schedule</h2>
-              </div>
-            </div>
-
-            <div className="hours-list">
-              {VENUE.hours.map(([day, time]) => (
-                <div className="hours-row" key={day}>
-                  <strong>{day}</strong>
-                  <span>{time}</span>
-                </div>
-              ))}
-            </div>
-          </section>
-        </div>
-
-        <section className="data-card promoter-admin-card" id="promoters">
+        <form
+          className="data-card venue-editor-card"
+          onSubmit={saveVenue}
+        >
           <div className="section-heading">
             <div>
-              <p className="eyebrow">Promoter management</p>
-              <h2>Promoter QR Links</h2>
-              <p className="muted">
-                Demo stats and recent registrations are shown below each link.
-              </p>
+              <p className="eyebrow">Deployment venue</p>
+              <h2>Venue Settings</h2>
+            </div>
+          </div>
+
+          <div className="admin-form-grid">
+            <label>
+              Venue name
+              <input
+                value={venue.name}
+                onChange={(event) =>
+                  updateVenue("name", event.target.value)
+                }
+                required
+              />
+            </label>
+
+            <label>
+              Phone
+              <input
+                type="tel"
+                value={venue.phone}
+                onChange={(event) =>
+                  updateVenue("phone", event.target.value)
+                }
+              />
+            </label>
+
+            <label className="full-field">
+              Street address
+              <input
+                value={venue.address}
+                onChange={(event) =>
+                  updateVenue("address", event.target.value)
+                }
+                required
+              />
+            </label>
+
+            <label>
+              Latitude
+              <input
+                type="number"
+                step="0.0000001"
+                value={venue.latitude}
+                onChange={(event) =>
+                  updateVenue("latitude", event.target.value)
+                }
+                required
+              />
+            </label>
+
+            <label>
+              Longitude
+              <input
+                type="number"
+                step="0.0000001"
+                value={venue.longitude}
+                onChange={(event) =>
+                  updateVenue("longitude", event.target.value)
+                }
+                required
+              />
+            </label>
+
+            <label>
+              Restricted radius, meters
+              <input
+                type="number"
+                min="50"
+                max="10000"
+                value={venue.radiusMeters}
+                onChange={(event) =>
+                  updateVenue("radiusMeters", event.target.value)
+                }
+                required
+              />
+            </label>
+
+            <label>
+              Admin configuration key
+              <input
+                type="password"
+                value={adminKey}
+                onChange={(event) =>
+                  setAdminKey(event.target.value)
+                }
+                required
+              />
+            </label>
+          </div>
+
+          <div className="admin-form-actions">
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={useCurrentLocation}
+            >
+              Use Current Location
+            </button>
+
+            <button
+              className="primary-button"
+              type="submit"
+              disabled={saving}
+            >
+              {saving ? "Saving..." : "Save Venue"}
+            </button>
+          </div>
+
+          {message && (
+            <div className={isError ? "error-box" : "notice-box"}>
+              {message}
+            </div>
+          )}
+        </form>
+
+        <section className="data-card config-card hours-editor-card">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">Operating hours</p>
+              <h2>Weekly Schedule</h2>
+            </div>
+          </div>
+
+          <div className="hours-editor-list">
+            {hours.map((row, index) => (
+              <div className="hours-editor-row" key={row.day}>
+                <strong>{row.day}</strong>
+
+                <input
+                  value={row.open}
+                  aria-label={`${row.day} opening time`}
+                  onChange={(event) => {
+                    const value = event.target.value;
+
+                    setHours((current) =>
+                      current.map((item, itemIndex) =>
+                        itemIndex === index
+                          ? { ...item, open: value }
+                          : item,
+                      ),
+                    );
+                  }}
+                />
+
+                <span>to</span>
+
+                <input
+                  value={row.close}
+                  aria-label={`${row.day} closing time`}
+                  onChange={(event) => {
+                    const value = event.target.value;
+
+                    setHours((current) =>
+                      current.map((item, itemIndex) =>
+                        itemIndex === index
+                          ? { ...item, close: value }
+                          : item,
+                      ),
+                    );
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section
+          className="data-card promoter-admin-card"
+          id="promoters"
+        >
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">Promoters</p>
+              <h2>QR Links</h2>
             </div>
           </div>
 
           <div className="promoter-admin-grid">
-            {promoterRows.map(({ promoter, stats, recentGuests }) => (
-              <article className="promoter-panel" key={promoter.slug}>
-                <div className="promoter-panel-head">
-                  <div className="promoter-admin-item promoter-admin-headline">
-                    <div className="promoter-avatar">
-                      {promoter.name.charAt(0)}
-                    </div>
-
-                    <div className="promoter-admin-copy">
-                      <strong>{promoter.name}</strong>
-                      <code>/p/{promoter.slug}</code>
-                      <small>{window.location.origin}/p/{promoter.slug}</small>
-                    </div>
-
-                    <div className="promoter-actions">
-                      <button
-                        className="secondary-button compact-button"
-                        type="button"
-                        onClick={() => copyPromoterLink(promoter.slug)}
-                      >
-                        Copy Link
-                      </button>
-
-                      <a
-                        className="primary-button compact-button"
-                        href={`/p/${promoter.slug}`}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        Open
-                      </a>
-                    </div>
-                  </div>
+            {VENUE.promoters.map((promoter) => (
+              <article
+                className="promoter-admin-item"
+                key={promoter.slug}
+              >
+                <div className="promoter-avatar">
+                  {promoter.name.charAt(0)}
                 </div>
 
-                <div className="mini-stat-grid">
-                  <article>
-                    <small>Registrations</small>
-                    <strong>{stats.registrations}</strong>
-                  </article>
-                  <article>
-                    <small>Total Guests</small>
-                    <strong>{stats.totalPartySize}</strong>
-                  </article>
-                  <article>
-                    <small>Checked In</small>
-                    <strong>{stats.checkedIn}</strong>
-                  </article>
-                  <article>
-                    <small>Conversion</small>
-                    <strong>{stats.conversionPercentage}%</strong>
-                  </article>
+                <div className="promoter-admin-copy">
+                  <strong>{promoter.name}</strong>
+                  <code>/p/{promoter.slug}</code>
                 </div>
 
-                <div className="mini-subheading">Recent registrations</div>
+                <div className="promoter-actions">
+                  <button
+                    className="secondary-button compact-button"
+                    type="button"
+                    onClick={() =>
+                      copyPromoterLink(promoter.slug)
+                    }
+                  >
+                    Copy Link
+                  </button>
 
-                <div className="recent-registration-list">
-                  {recentGuests.map((guest) => (
-                    <div className="recent-registration-row" key={guest.id}>
-                      <div>
-                        <strong>{guest.name}</strong>
-                        <span>{formatDateTime(guest.registeredAt)}</span>
-                      </div>
-
-                      <div>
-                        <small>{guest.phone}</small>
-                        <span
-                          className={`status-badge ${
-                            guest.status === "checked_in"
-                              ? "status-success"
-                              : guest.status === "flagged"
-                                ? "status-danger"
-                                : "status-neutral"
-                          }`}
-                        >
-                          {guest.status === "checked_in"
-                            ? "Clean"
-                            : guest.status === "flagged"
-                              ? "Red Flag"
-                              : "Pending"}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+                  <a
+                    className="primary-button compact-button"
+                    href={`/p/${promoter.slug}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Open
+                  </a>
                 </div>
               </article>
             ))}

@@ -804,3 +804,68 @@ nav a:hover {
     gap: 4px;
   }
 }
+
+.promoter-admin-copy small {
+  display: block;
+  max-width: 520px;
+  margin-top: 5px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.security-card {
+  margin-top: 18px;
+}
+
+.security-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.security-grid article {
+  min-height: 150px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background:
+    linear-gradient(
+      145deg,
+      rgba(215, 21, 42, 0.08),
+      transparent
+    ),
+    #101010;
+}
+
+.security-grid article strong {
+  display: block;
+  color: var(--gold);
+}
+
+.security-grid article p {
+  margin-bottom: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+@media (max-width: 900px) {
+  .security-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .security-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .promoter-actions {
+    flex-wrap: wrap;
+  }
+
+  .promoter-actions .compact-button {
+    flex: 1;
+  }
+}

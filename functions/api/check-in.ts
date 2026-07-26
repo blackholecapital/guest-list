@@ -178,11 +178,42 @@ export const onRequestPost: PagesFunction<Env> = async ({
       venue.longitude,
     );
 
-    if (distanceMeters > venue.radius_meters) {
+    if (distanceMeters < venue.radius_meters) {
       return failure(
-        "OUTSIDE_GEOFENCE",
-        "You must be near the venue to join this guest list.",
+        "TOO_CLOSE_TO_VENUE",
+        "Guest-list registration is not available at the venue.",
         403,
+      );
+    }
+
+    const eventDate = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/New_York",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date());
+
+    const existingGuest = await env.DB
+      .prepare(`
+        SELECT id
+        FROM guests
+        WHERE venue_id = ?
+          AND phone = ?
+          AND event_date = ?
+        LIMIT 1
+      `)
+      .bind(
+        venue.id,
+        body.phone,
+        eventDate,
+      )
+      .first<{ id: number }>();
+
+    if (existingGuest) {
+      return failure(
+        "ALREADY_REGISTERED",
+        "This phone number is already on tonight's guest list.",
+        409,
       );
     }
 
@@ -197,9 +228,10 @@ export const onRequestPost: PagesFunction<Env> = async ({
           submitted_latitude,
           submitted_longitude,
           submitted_accuracy_meters,
-          calculated_distance_meters
+          calculated_distance_meters,
+          event_date
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `)
       .bind(
         venue.id,
@@ -211,6 +243,7 @@ export const onRequestPost: PagesFunction<Env> = async ({
         body.longitude,
         body.accuracyMeters ?? null,
         distanceMeters,
+        eventDate,
       )
       .run();
 
@@ -223,6 +256,19 @@ export const onRequestPost: PagesFunction<Env> = async ({
     }, 201);
   } catch (error) {
     console.error("check-in failed", error);
+
+    const message =
+      error instanceof Error
+        ? error.message
+        : String(error);
+
+    if (message.includes("UNIQUE constraint failed")) {
+      return failure(
+        "ALREADY_REGISTERED",
+        "This phone number is already on tonight's guest list.",
+        409,
+      );
+    }
 
     return failure(
       "DATABASE_ERROR",

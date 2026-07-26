@@ -52,46 +52,6 @@ type StatsData = {
   }>;
 };
 
-type ConfigData = {
-  venue: {
-    id: number;
-    slug: string;
-    name: string;
-    address: string;
-    latitude: number;
-    longitude: number;
-    radiusMeters: number;
-  };
-  promoters: Array<{
-    id: number;
-    slug: string;
-    name: string;
-    active: boolean;
-    qrPath: string;
-  }>;
-};
-
-
-const VENUE = {
-  name: "Scores Tampa",
-  address: "2310 N. Dale Mabry Highway, Tampa, Florida 33607",
-  phone: "(813) 875-7912",
-  hours: [
-    ["Sunday", "6:00 PM – 3:00 AM"],
-    ["Monday", "6:00 PM – 3:00 AM"],
-    ["Tuesday", "6:00 PM – 3:00 AM"],
-    ["Wednesday", "6:00 PM – 3:00 AM"],
-    ["Thursday", "6:00 PM – 3:00 AM"],
-    ["Friday", "6:00 PM – 3:00 AM"],
-    ["Saturday", "6:00 PM – 3:00 AM"],
-  ],
-  promoters: [
-    { id: 1, name: "Mike D.", slug: "mike" },
-    { id: 2, name: "Sarah K.", slug: "sarah" },
-    { id: 3, name: "James R.", slug: "james" },
-  ],
-};
-
 async function api<T>(
   url: string,
   init?: RequestInit,
@@ -168,6 +128,7 @@ function Shell({
           <nav>
             <a href="/guest-list">Guest List</a>
             <a href="/stats">Stats</a>
+            <a href="/admin#promoters">Promoters</a>
             <a href="/admin">Admin</a>
           </nav>
         )}
@@ -342,7 +303,7 @@ function PromoterPage({ promoterSlug }: { promoterSlug: string }) {
             <div className="location-note">
               <span>⌖</span>
               <p>
-                We use your location only to verify this guest-list request.
+                Location is used to enforce the venue registration rules.
               </p>
             </div>
 
@@ -647,92 +608,213 @@ function StatCard({
 }
 
 function AdminPage() {
-  const [data, setData] = useState<ConfigData | null>(null);
-  const [error, setError] = useState("");
+  const promoters = [
+    {
+      id: 1,
+      name: "Mike D.",
+      slug: "mike",
+    },
+    {
+      id: 2,
+      name: "Sarah K.",
+      slug: "sarah",
+    },
+    {
+      id: 3,
+      name: "James R.",
+      slug: "james",
+    },
+  ];
 
-  useEffect(() => {
-    void api<ConfigData>("/api/config").then((result) => {
-      if ("error" in result) {
-        setError(result.error.message);
-        return;
-      }
+  const hours = [
+    ["Sunday", "6:00 PM – 3:00 AM"],
+    ["Monday", "6:00 PM – 3:00 AM"],
+    ["Tuesday", "6:00 PM – 3:00 AM"],
+    ["Wednesday", "6:00 PM – 3:00 AM"],
+    ["Thursday", "6:00 PM – 3:00 AM"],
+    ["Friday", "6:00 PM – 3:00 AM"],
+    ["Saturday", "6:00 PM – 3:00 AM"],
+  ];
 
-      setData(result.data);
-    });
-  }, []);
+  function copyPromoterLink(slug: string) {
+    const url = `${window.location.origin}/p/${slug}`;
+    void navigator.clipboard.writeText(url);
+  }
 
   return (
     <Shell>
       <main className="page wide">
         <div className="page-heading">
           <div>
-            <p className="eyebrow">Read-only</p>
-            <h1>Admin Config</h1>
+            <p className="eyebrow">Venue operations</p>
+            <h1>Admin Dashboard</h1>
+            <p className="muted">
+              Scores Tampa guest-list configuration and promoter links.
+            </p>
           </div>
         </div>
 
-        {error && <div className="error-box">{error}</div>}
-
-        {!data ? (
-          <div className="empty-state">Loading configuration...</div>
-        ) : data ? (
-          <div className="admin-grid">
-            <section className="data-card config-card">
-              <h2>Venue</h2>
-
-              <dl>
-                <div>
-                  <dt>Name</dt>
-                  <dd>{data.venue.name}</dd>
-                </div>
-                <div>
-                  <dt>Address</dt>
-                  <dd>{data.venue.address}</dd>
-                </div>
-                <div>
-                  <dt>Latitude</dt>
-                  <dd>{data.venue.latitude}</dd>
-                </div>
-                <div>
-                  <dt>Longitude</dt>
-                  <dd>{data.venue.longitude}</dd>
-                </div>
-                <div>
-                  <dt>Radius</dt>
-                  <dd>{data.venue.radiusMeters} meters</dd>
-                </div>
-              </dl>
-            </section>
-
-            <section className="data-card config-card">
-              <h2>Promoters</h2>
-
-              <div className="promoter-config-list">
-                {data.promoters.map((promoter) => (
-                  <div className="promoter-config" key={promoter.id}>
-                    <div>
-                      <strong>{promoter.name}</strong>
-                      <small>{promoter.qrPath}</small>
-                    </div>
-
-                    <span
-                      className={
-                        promoter.active ? "active-badge" : "inactive-badge"
-                      }
-                    >
-                      {promoter.active ? "Active" : "Inactive"}
-                    </span>
-                  </div>
-                ))}
+        <section className="admin-grid admin-top-grid">
+          <article className="data-card config-card">
+            <div className="section-heading">
+              <div>
+                <p className="eyebrow">Venue</p>
+                <h2>Scores Tampa</h2>
               </div>
-            </section>
+            </div>
+
+            <dl>
+              <div>
+                <dt>Address</dt>
+                <dd>
+                  2310 N. Dale Mabry Highway, Tampa, Florida 33607
+                </dd>
+              </div>
+
+              <div>
+                <dt>Phone</dt>
+                <dd>(813) 875-7912</dd>
+              </div>
+
+              <div>
+                <dt>Restricted registration radius</dt>
+                <dd>457 meters</dd>
+              </div>
+
+              <div>
+                <dt>Registration rule</dt>
+                <dd>
+                  Guest-list submissions are blocked inside the restricted
+                  venue zone.
+                </dd>
+              </div>
+
+              <div>
+                <dt>Duplicate rule</dt>
+                <dd>One registration per phone number per night.</dd>
+              </div>
+            </dl>
+          </article>
+
+          <article className="data-card config-card">
+            <div className="section-heading">
+              <div>
+                <p className="eyebrow">Club hours</p>
+                <h2>Weekly Schedule</h2>
+              </div>
+            </div>
+
+            <div className="hours-list">
+              {hours.map(([day, time]) => (
+                <div className="hours-row" key={day}>
+                  <strong>{day}</strong>
+                  <span>{time}</span>
+                </div>
+              ))}
+            </div>
+          </article>
+        </section>
+
+        <section
+          className="data-card promoter-admin-card"
+          id="promoters"
+        >
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">Promoter management</p>
+              <h2>Promoter QR Links</h2>
+              <p className="muted">
+                Each printed QR code should point to its promoter-specific
+                destination.
+              </p>
+            </div>
           </div>
-        ) : (
-          <div className="empty-state">
-            Database configuration is not available yet. The venue and promoter
-            information above is ready for the demo.
+
+          <div className="promoter-admin-grid">
+            {promoters.map((promoter) => {
+              const fullUrl =
+                `${window.location.origin}/p/${promoter.slug}`;
+
+              return (
+                <article
+                  className="promoter-admin-item"
+                  key={promoter.id}
+                >
+                  <div className="promoter-avatar">
+                    {promoter.name.charAt(0)}
+                  </div>
+
+                  <div className="promoter-admin-copy">
+                    <strong>{promoter.name}</strong>
+                    <code>/p/{promoter.slug}</code>
+                    <small>{fullUrl}</small>
+                  </div>
+
+                  <div className="promoter-actions">
+                    <span className="active-badge">Active</span>
+
+                    <button
+                      className="secondary-button compact-button"
+                      type="button"
+                      onClick={() => copyPromoterLink(promoter.slug)}
+                    >
+                      Copy Link
+                    </button>
+
+                    <a
+                      className="primary-button compact-button"
+                      href={`/p/${promoter.slug}`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Open
+                    </a>
+                  </div>
+                </article>
+              );
+            })}
           </div>
-        )}
+        </section>
+
+        <section className="data-card config-card security-card">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">QR protection</p>
+              <h2>Current MVP Rules</h2>
+            </div>
+          </div>
+
+          <div className="security-grid">
+            <article>
+              <strong>Restricted venue zone</strong>
+              <p>
+                Registrations made within 457 meters of Scores Tampa are
+                rejected.
+              </p>
+            </article>
+
+            <article>
+              <strong>Nightly phone limit</strong>
+              <p>
+                A phone number can join the guest list only once per night.
+              </p>
+            </article>
+
+            <article>
+              <strong>Single door check-in</strong>
+              <p>
+                Once checked in, the registration remains consumed.
+              </p>
+            </article>
+
+            <article>
+              <strong>Promoter attribution</strong>
+              <p>
+                Every registration records the promoter QR link used.
+              </p>
+            </article>
+          </div>
+        </section>
       </main>
     </Shell>
   );

@@ -2,5 +2,13 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "guest-list",
   "compatibility_date": "2026-07-26",
-  "pages_build_output_dir": "./dist"
+  "pages_build_output_dir": "./dist",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "guest-list-db",
+      "database_id": "daa260f7-02a6-4e74-ab28-2a143aef3de9",
+      "migrations_dir": "migrations"
+    }
+  ]
 }

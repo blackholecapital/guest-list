@@ -132,8 +132,12 @@ function Shell({
     <div className="app-shell">
       <header className="topbar">
         <a href="/" className="brand">
-          <span className="brand-mark">S</span>
-          <span>
+          <img
+            className="brand-logo"
+            src="/assets/scores-logo.png"
+            alt="Scores Tampa"
+          />
+          <span className="brand-copy">
             <strong>Scores Tampa</strong>
             <small>Guest List</small>
           </span>
@@ -345,8 +349,7 @@ function PromoterPage({ promoterSlug }: { promoterSlug: string }) {
             <div className="location-note">
               <span>⌖</span>
               <p>
-                You must be near Scores Tampa. We use your location only
-                to verify this guest-list request.
+                We use your location only to verify this guest-list request.
               </p>
             </div>
 
@@ -535,7 +538,7 @@ function StatsPage() {
         <div className="page-heading">
           <div>
             <p className="eyebrow">Performance</p>
-            <h1>Promoter Stats</h1>
+            <h1>Stats Dashboard</h1>
           </div>
         </div>
 
@@ -712,7 +715,7 @@ export default function App() {
   const path = window.location.pathname.replace(/\/+$/, "") || "/";
 
   if (path === "/") {
-    return <HomePage />;
+    return <StatsPage />;
   }
 
   if (path === "/guest-list") {

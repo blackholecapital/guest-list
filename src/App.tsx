@@ -52,6 +52,26 @@ type StatsData = {
   }>;
 };
 
+const VENUE = {
+  name: "Scores Tampa",
+  address: "2310 N. Dale Mabry Highway, Tampa, Florida 33607",
+  phone: "(813) 875-7912",
+  hours: [
+    ["Sunday", "6:00 PM – 3:00 AM"],
+    ["Monday", "6:00 PM – 3:00 AM"],
+    ["Tuesday", "6:00 PM – 3:00 AM"],
+    ["Wednesday", "6:00 PM – 3:00 AM"],
+    ["Thursday", "6:00 PM – 3:00 AM"],
+    ["Friday", "6:00 PM – 3:00 AM"],
+    ["Saturday", "6:00 PM – 3:00 AM"],
+  ],
+  promoters: [
+    { id: 1, name: "Mike D.", slug: "mike" },
+    { id: 2, name: "Sarah K.", slug: "sarah" },
+    { id: 3, name: "James R.", slug: "james" },
+  ],
+};
+
 async function api<T>(
   url: string,
   init?: RequestInit,

@@ -157,34 +157,6 @@ function Shell({
   );
 }
 
-function HomePage() {
-  return (
-    <Shell>
-      <main className="page narrow">
-        <section className="hero-card">
-          <p className="eyebrow">Scores Tampa</p>
-          <h1>Guest List MVP</h1>
-          <p className="muted">
-            Use a promoter link to join the guest list.
-          </p>
-
-          <div className="promoter-links">
-            <a className="primary-button" href="/p/mike">
-              Mike D.
-            </a>
-            <a className="primary-button" href="/p/sarah">
-              Sarah K.
-            </a>
-            <a className="primary-button" href="/p/james">
-              James R.
-            </a>
-          </div>
-        </section>
-      </main>
-    </Shell>
-  );
-}
-
 function PromoterPage({ promoterSlug }: { promoterSlug: string }) {
   const promoterNames: Record<string, string> = {
     mike: "Mike D.",

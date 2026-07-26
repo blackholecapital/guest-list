@@ -71,6 +71,27 @@ type ConfigData = {
   }>;
 };
 
+
+const VENUE = {
+  name: "Scores Tampa",
+  address: "2310 N. Dale Mabry Highway, Tampa, Florida 33607",
+  phone: "(813) 875-7912",
+  hours: [
+    ["Sunday", "6:00 PM – 3:00 AM"],
+    ["Monday", "6:00 PM – 3:00 AM"],
+    ["Tuesday", "6:00 PM – 3:00 AM"],
+    ["Wednesday", "6:00 PM – 3:00 AM"],
+    ["Thursday", "6:00 PM – 3:00 AM"],
+    ["Friday", "6:00 PM – 3:00 AM"],
+    ["Saturday", "6:00 PM – 3:00 AM"],
+  ],
+  promoters: [
+    { id: 1, name: "Mike D.", slug: "mike" },
+    { id: 2, name: "Sarah K.", slug: "sarah" },
+    { id: 3, name: "James R.", slug: "james" },
+  ],
+};
+
 async function api<T>(
   url: string,
   init?: RequestInit,
@@ -514,11 +535,37 @@ function StatsPage() {
           </div>
         </div>
 
+        <section className="venue-strip">
+          <article className="venue-info-card">
+            <span className="venue-icon">⌖</span>
+            <div>
+              <small>Venue</small>
+              <strong>{VENUE.address}</strong>
+            </div>
+          </article>
+
+          <article className="venue-info-card">
+            <span className="venue-icon">☎</span>
+            <div>
+              <small>Phone</small>
+              <strong>{VENUE.phone}</strong>
+            </div>
+          </article>
+
+          <article className="venue-info-card hours-card">
+            <span className="venue-icon">◷</span>
+            <div>
+              <small>Tonight</small>
+              <strong>6:00 PM – 3:00 AM</strong>
+            </div>
+          </article>
+        </section>
+
         {error && <div className="error-box">{error}</div>}
 
-        {!data ? (
+        {!data && !error ? (
           <div className="empty-state">Loading stats...</div>
-        ) : (
+        ) : data ? (
           <>
             <section className="stat-grid">
               <StatCard
@@ -559,6 +606,25 @@ function StatsPage() {
               ))}
             </section>
           </>
+        ) : (
+          <section className="dashboard-preview">
+            <article className="stat-card">
+              <small>Registrations</small>
+              <strong>—</strong>
+            </article>
+            <article className="stat-card">
+              <small>Total guests</small>
+              <strong>—</strong>
+            </article>
+            <article className="stat-card">
+              <small>Checked in</small>
+              <strong>—</strong>
+            </article>
+            <article className="stat-card">
+              <small>Conversion</small>
+              <strong>—</strong>
+            </article>
+          </section>
         )}
       </main>
     </Shell>
@@ -609,7 +675,7 @@ function AdminPage() {
 
         {!data ? (
           <div className="empty-state">Loading configuration...</div>
-        ) : (
+        ) : data ? (
           <div className="admin-grid">
             <section className="data-card config-card">
               <h2>Venue</h2>
@@ -660,6 +726,11 @@ function AdminPage() {
                 ))}
               </div>
             </section>
+          </div>
+        ) : (
+          <div className="empty-state">
+            Database configuration is not available yet. The venue and promoter
+            information above is ready for the demo.
           </div>
         )}
       </main>

@@ -240,7 +240,7 @@ function PromoterPage({ promoterSlug }: { promoterSlug: string }) {
           }),
         });
 
-        if (!result.ok) {
+        if ("error" in result) {
           setStatus("error");
           setMessage(result.error.message);
           return;
@@ -381,7 +381,7 @@ function GuestListPage() {
   const loadGuests = useCallback(async () => {
     const result = await api<GuestListData>("/api/guest-list");
 
-    if (!result.ok) {
+    if ("error" in result) {
       setError(result.error.message);
       setLoading(false);
       return;
@@ -414,7 +414,7 @@ function GuestListPage() {
       body: JSON.stringify({ guestId }),
     });
 
-    if (!result.ok) {
+    if ("error" in result) {
       setError(result.error.message);
       setCheckingIn(null);
       return;
@@ -520,7 +520,7 @@ function StatsPage() {
 
   useEffect(() => {
     void api<StatsData>("/api/stats").then((result) => {
-      if (!result.ok) {
+      if ("error" in result) {
         setError(result.error.message);
         return;
       }
@@ -611,7 +611,7 @@ function AdminPage() {
 
   useEffect(() => {
     void api<ConfigData>("/api/config").then((result) => {
-      if (!result.ok) {
+      if ("error" in result) {
         setError(result.error.message);
         return;
       }

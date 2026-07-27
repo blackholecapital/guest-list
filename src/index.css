@@ -1289,3 +1289,95 @@ header nav,
     display: none;
   }
 }
+
+
+/* Promoter dashboard */
+.promoter-dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.promoter-dashboard-card {
+  padding: 22px;
+}
+
+.promoter-dashboard-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.promoter-dashboard-head h2 {
+  margin: 4px 0 6px;
+}
+
+.promoter-dashboard-head code {
+  color: var(--gold);
+}
+
+.promoter-qr-image {
+  width: 132px;
+  height: 132px;
+  object-fit: contain;
+  padding: 8px;
+  border-radius: 14px;
+  background: #fff;
+  flex: 0 0 auto;
+}
+
+.promoter-dashboard-stats {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.promoter-dashboard-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.promoter-dashboard-actions > * {
+  flex: 1 1 0;
+  text-align: center;
+}
+
+.promoter-ticket-preview {
+  margin-top: 18px;
+  padding: 24px;
+}
+
+.promoter-ticket-preview img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+}
+
+.admin-promoter-heading {
+  align-items: center;
+}
+
+@media (max-width: 1100px) {
+  .promoter-dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .promoter-dashboard-head,
+  .admin-promoter-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .promoter-dashboard-actions {
+    flex-direction: column;
+  }
+
+  .promoter-qr-image {
+    width: 156px;
+    height: 156px;
+  }
+}

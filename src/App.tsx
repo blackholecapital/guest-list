@@ -429,80 +429,132 @@ function PromoterPage({ promoterSlug }: { promoterSlug: string }) {
 
   return (
     <Shell compact>
-      <main className="page narrow">
-        <section className="hero-card">
-          <p className="eyebrow">Guest list access</p>
-          <h1>Join Scores Tampa</h1>
-          <p className="promoter-label">
-            Promoter: <strong>{promoterName}</strong>
-          </p>
+      <main className="page signup-page">
+        <section className="hero-card signup-card">
+          <div className="signup-form-panel">
+            <p className="eyebrow">Guest list access</p>
+            <h1>Join Scores Tampa</h1>
+            <p className="promoter-label">
+              Promoter: <strong>{promoterName}</strong>
+            </p>
 
-          <form onSubmit={handleSubmit} className="guest-form">
-            <label>
-              Full name
-              <input
-                type="text"
-                autoComplete="name"
-                placeholder="Your name"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                required
-              />
-            </label>
+            <form onSubmit={handleSubmit} className="guest-form">
+              <label>
+                Full name
+                <input
+                  type="text"
+                  autoComplete="name"
+                  placeholder="Your name"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  required
+                />
+              </label>
 
-            <label>
-              Phone number
-              <input
-                type="tel"
-                autoComplete="tel"
-                placeholder="(813) 555-1212"
-                value={phone}
-                onChange={(event) => setPhone(event.target.value)}
-                required
-              />
-            </label>
+              <label>
+                Phone number
+                <input
+                  type="tel"
+                  autoComplete="tel"
+                  placeholder="(813) 555-1212"
+                  value={phone}
+                  onChange={(event) => setPhone(event.target.value)}
+                  required
+                />
+              </label>
 
-            <label>
-              Party size
-              <select
-                value={partySize}
-                onChange={(event) =>
-                  setPartySize(Number(event.target.value))
-                }
+              <label>
+                Party size
+                <select
+                  value={partySize}
+                  onChange={(event) =>
+                    setPartySize(Number(event.target.value))
+                  }
+                >
+                  {Array.from({ length: 10 }, (_, index) => index + 1).map(
+                    (size) => (
+                      <option key={size} value={size}>
+                        {size}
+                      </option>
+                    ),
+                  )}
+                </select>
+              </label>
+
+              <div className="location-note">
+                <span aria-hidden="true">⌖</span>
+                <p>
+                  Location is used to enforce the venue registration rules.
+                </p>
+              </div>
+
+              <button
+                className="primary-button full"
+                type="submit"
+                disabled={status === "locating" || status === "submitting"}
               >
-                {Array.from({ length: 10 }, (_, index) => index + 1).map(
-                  (size) => (
-                    <option key={size} value={size}>
-                      {size}
-                    </option>
-                  ),
-                )}
-              </select>
-            </label>
+                {status === "locating"
+                  ? "Checking location..."
+                  : status === "submitting"
+                    ? "Joining..."
+                    : "Join Guest List"}
+              </button>
 
-            <div className="location-note">
-              <span>⌖</span>
-              <p>
-                Location is used to enforce the venue registration rules.
+              {message && status === "error" && (
+                <div className="error-box">{message}</div>
+              )}
+            </form>
+          </div>
+
+          <aside className="venue-panel" aria-label="Scores Tampa venue details">
+            <div>
+              <p className="eyebrow">The Scores experience</p>
+              <h2>Prime steaks. Fine food. VIP nights.</h2>
+              <p className="venue-copy">
+                Join the guest list, arrive hungry, and stay for Tampa nightlife
+                with a full dinner menu, craft cocktails, and VIP service.
               </p>
             </div>
 
-            <button
-              className="primary-button full"
-              type="submit"
-              disabled={status === "locating" || status === "submitting"}
-            >
-              {status === "locating"
-                ? "Checking location..."
-                : status === "submitting"
-                  ? "Joining..."
-                  : "Join Guest List"}
-            </button>
+            <div className="venue-detail-list">
+              <a
+                className="venue-detail"
+                href="https://maps.google.com/?q=2310+N+Dale+Mabry+Highway+Tampa+FL+33607"
+                target="_blank"
+                rel="noreferrer"
+              >
+                <span className="venue-icon" aria-hidden="true">◆</span>
+                <span>
+                  <small>Location</small>
+                  <strong>{VENUE.address}</strong>
+                </span>
+              </a>
 
-            {message && status === "error" && (
-              <div className="error-box">{message}</div>
-            )}
-          </form>
+              <a className="venue-detail" href={`tel:${VENUE.phone.replace(/\D/g, "")}`}>
+                <span className="venue-icon" aria-hidden="true">☎</span>
+                <span>
+                  <small>Phone</small>
+                  <strong>{VENUE.phone}</strong>
+                </span>
+              </a>
+
+              <div className="venue-detail">
+                <span className="venue-icon" aria-hidden="true">◷</span>
+                <span>
+                  <small>Hours</small>
+                  <strong>Open nightly, 6:00 PM – 3:00 AM</strong>
+                </span>
+              </div>
+            </div>
+
+            <div className="menu-promo">
+              <span className="menu-promo-icon" aria-hidden="true">✦</span>
+              <div>
+                <strong>Dinner menu available nightly</strong>
+                <p>Prime cuts, chef-driven entrees, and craft cocktails.</p>
+              </div>
+            </div>
+          </aside>
         </section>
       </main>
     </Shell>

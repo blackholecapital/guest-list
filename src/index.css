@@ -275,6 +275,157 @@ nav a:hover {
   line-height: 1.5;
 }
 
+
+.signup-page {
+  max-width: 1080px;
+  padding-top: 42px;
+}
+
+.signup-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(300px, 0.92fr);
+  gap: clamp(28px, 5vw, 56px);
+  padding: clamp(28px, 4vw, 44px);
+  overflow: hidden;
+}
+
+.signup-form-panel {
+  min-width: 0;
+}
+
+.signup-card h1 {
+  font-size: clamp(42px, 5vw, 64px);
+}
+
+.venue-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 24px;
+  min-width: 0;
+  padding: 28px;
+  border: 1px solid rgba(214, 174, 88, 0.28);
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at top right, rgba(215, 21, 42, 0.16), transparent 42%),
+    linear-gradient(160deg, rgba(214, 174, 88, 0.08), rgba(255, 255, 255, 0.018));
+}
+
+.venue-panel h2 {
+  margin: 8px 0 12px;
+  max-width: 12ch;
+  font-size: clamp(26px, 3vw, 38px);
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+}
+
+.venue-copy {
+  margin: 0;
+  color: #c8c8c8;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.venue-detail-list {
+  display: grid;
+  gap: 10px;
+}
+
+.venue-detail {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.22);
+  color: inherit;
+}
+
+a.venue-detail:hover {
+  border-color: rgba(214, 174, 88, 0.5);
+  background: rgba(214, 174, 88, 0.08);
+}
+
+.venue-icon {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 10px;
+  background: rgba(215, 21, 42, 0.18);
+  color: var(--gold);
+  font-size: 18px;
+}
+
+.venue-detail small,
+.venue-detail strong {
+  display: block;
+}
+
+.venue-detail small {
+  margin-bottom: 3px;
+  color: var(--gold);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.venue-detail strong {
+  color: #f3f3f3;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.menu-promo {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 14px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(215, 21, 42, 0.2), rgba(214, 174, 88, 0.12));
+}
+
+.menu-promo-icon {
+  color: var(--gold);
+  font-size: 28px;
+  line-height: 1;
+}
+
+.menu-promo strong {
+  display: block;
+  color: white;
+  font-size: 14px;
+}
+
+.menu-promo p {
+  margin: 4px 0 0;
+  color: #cfc4ae;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+@media (max-width: 820px) {
+  .signup-page {
+    max-width: 620px;
+  }
+
+  .signup-card {
+    grid-template-columns: 1fr;
+  }
+
+  .venue-panel {
+    padding: 22px;
+  }
+
+  .venue-panel h2 {
+    max-width: none;
+  }
+}
+
 .error-box {
   padding: 14px 16px;
   border-radius: 12px;

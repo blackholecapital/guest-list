@@ -547,13 +547,19 @@ function PromoterPage({ promoterSlug }: { promoterSlug: string }) {
               </div>
             </div>
 
-            <div className="menu-promo">
+            <a
+              className="menu-promo"
+              href="https://www.scorestampa.com/menu/"
+              target="_blank"
+              rel="noreferrer"
+              aria-label="View the Scores Tampa dinner menu"
+            >
               <span className="menu-promo-icon" aria-hidden="true">✦</span>
               <div>
-                <strong>Dinner menu available nightly</strong>
-                <p>Prime cuts, chef-driven entrees, and craft cocktails.</p>
+                <strong>View the full dinner menu</strong>
+                <p>Prime cuts, chef-driven entrees, craft cocktails, and more.</p>
               </div>
-            </div>
+            </a>
           </aside>
         </section>
       </main>

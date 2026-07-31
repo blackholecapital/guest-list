@@ -1560,6 +1560,20 @@ function AdminPage() {
   );
 }
 
+function PromoterControlPage({ promoterSlug }: { promoterSlug: string }) {
+  return (
+    <Shell>
+      <main className="page narrow">
+        <section className="hero-card">
+          <p className="eyebrow">Promoter tools</p>
+          <h1>{promoterSlug}</h1>
+          <p>Generate QR codes and manage promoter passes here.</p>
+        </section>
+      </main>
+    </Shell>
+  );
+}
+
 function NotFoundPage() {
   return (
     <Shell>
@@ -1597,6 +1611,14 @@ export default function App() {
 
   if (path === "/admin") {
     return <AdminPage />;
+  }
+
+  if (path.startsWith("/promoter/")) {
+    const promoterSlug = path.split("/")[2]?.toLowerCase();
+
+    if (promoterSlug) {
+      return <PromoterControlPage promoterSlug={promoterSlug} />;
+    }
   }
 
   if (path.startsWith("/p/")) {

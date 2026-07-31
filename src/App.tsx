@@ -1124,11 +1124,11 @@ function PromotersDashboardPage() {
                     type="button"
                     onClick={() => copyPromoterLink(promoter.promoterSlug)}
                   >
-                    Copy Link
+                    View Promoter Page
                   </button>
                   <a
                     className="primary-button compact-button"
-                    href={`/p/${promoter.promoterSlug}`}
+                    href={`/promoter/${promoter.promoterSlug}`}
                     target="_blank"
                     rel="noreferrer"
                   >

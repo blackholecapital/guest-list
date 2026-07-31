@@ -868,7 +868,7 @@ function StatsPage() {
         <div className="page-heading">
           <div>
             <p className="eyebrow">Performance</p>
-            <h1>Stats Dashboard</h1>
+            <h1>Analytics Dashboard</h1>
           </div>
         </div>
 
@@ -937,6 +937,13 @@ function StatsPage() {
           <div className="section-heading">
             <div>
               <p className="eyebrow">Promoter performance</p>
+              <h2>Analytics Funnel</h2>
+              <div className="mini-stat-grid">
+                <article><small>QR Generated</small><strong>0</strong></article>
+                <article><small>QR Scanned</small><strong>0</strong></article>
+                <article><small>Guest Registered</small><strong>{data.summary.totalRegistrations}</strong></article>
+                <article><small>Checked In</small><strong>{data.summary.checkedIn}</strong></article>
+              </div>
               <h2>By Promoter</h2>
             </div>
           </div>

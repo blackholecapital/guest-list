@@ -1197,6 +1197,8 @@ function AdminPage() {
     latitude: 27.962,
     longitude: -82.506,
     radiusMeters: 457,
+    customerCooldownDays: 14,
+    geofenceEnabled: true,
   });
 
   const [hours, setHours] = useState(
@@ -1226,6 +1228,8 @@ function AdminPage() {
         latitude: Number(remote.latitude ?? 0),
         longitude: Number(remote.longitude ?? 0),
         radiusMeters: Number(remote.radiusMeters ?? 457),
+        customerCooldownDays: Number(remote.customerCooldownDays ?? 14),
+        geofenceEnabled: Boolean(remote.geofenceEnabled ?? true),
       });
 
       if (Array.isArray(remote.hours) && remote.hours.length > 0) {
@@ -1319,6 +1323,8 @@ function AdminPage() {
         body: JSON.stringify({
           ...venue,
           hours,
+          customerCooldownDays: venue.customerCooldownDays,
+          geofenceEnabled: venue.geofenceEnabled,
         }),
       });
 
@@ -1419,6 +1425,39 @@ function AdminPage() {
                 }
                 required
               />
+            </label>
+
+            <label>
+              Customer phone cooldown (days)
+              <select
+                value={venue.customerCooldownDays}
+                onChange={(event) =>
+                  setVenue((current) => ({
+                    ...current,
+                    customerCooldownDays: Number(event.target.value),
+                  }))
+                }
+              >
+                {Array.from({ length: 31 }, (_, i) => (
+                  <option key={i} value={i}>{i} days</option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              Geofence protection
+              <select
+                value={venue.geofenceEnabled ? "on" : "off"}
+                onChange={(event) =>
+                  setVenue((current) => ({
+                    ...current,
+                    geofenceEnabled: event.target.value === "on",
+                  }))
+                }
+              >
+                <option value="on">Enabled</option>
+                <option value="off">Disabled</option>
+              </select>
             </label>
 
             <label>

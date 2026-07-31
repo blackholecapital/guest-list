@@ -15,6 +15,8 @@ interface VenueRow {
   longitude: number;
   radius_meters: number;
   hours_json: string | null;
+  customer_cooldown_days: number;
+  geofence_enabled: number;
 }
 
 interface PromoterRow {
@@ -72,7 +74,9 @@ async function getVenue(env: Env): Promise<VenueRow | null> {
         latitude,
         longitude,
         radius_meters,
-        hours_json
+        hours_json,
+        customer_cooldown_days,
+        geofence_enabled
       FROM venues
       ORDER BY id ASC
       LIMIT 1

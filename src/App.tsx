@@ -1604,12 +1604,21 @@ function PromoterControlPage({ promoterSlug }: { promoterSlug: string }) {
     ({ mike: "Mike D.", sarah: "Sarah K.", james: "James R." } as Record<string,string>)[promoterSlug] ?? promoterSlug;
 
   const [qrUrl, setQrUrl] = useState("");
+  const [promoterId, setPromoterId] = useState(0);
+
+  useEffect(() => {
+    void api<any>("/api/config").then((result) => {
+      if (!("error" in result)) {
+        const promoter = result.data.promoters.find((p:any) => p.slug === promoterSlug);
+        setPromoterId(Number(promoter?.id ?? 0));
+      }
+    });
+  }, [promoterSlug]);
 
   async function generateQR() {
-    const ids: Record<string, number> = { mike: 1, sarah: 2, james: 3 };
     const result = await api<any>("/api/generate-qr", {
       method: "POST",
-      body: JSON.stringify({ promoterId: ids[promoterSlug] }),
+      body: JSON.stringify({ promoterId }),
     });
 
     if (!("error" in result)) {

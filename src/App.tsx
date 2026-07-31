@@ -1128,7 +1128,7 @@ function PromotersDashboardPage() {
                   </button>
                   <a
                     className="primary-button compact-button"
-                    href={`/promoter/${promoter.promoterSlug}`}
+                    href={`/p/${promoter.promoterSlug}`}
                     target="_blank"
                     rel="noreferrer"
                   >

@@ -11,5 +11,5 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     "INSERT INTO qr_codes (promoter_id, token, expires_at) VALUES (?, ?, datetime('now','+1 day'))"
   ).bind(promoterId, token).run();
 
-  return success({ url: `/join/${token}` });
+  return success({ url: `/join/${token}`, token, createdAt: new Date().toISOString() });
 };

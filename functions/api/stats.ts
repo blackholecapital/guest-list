@@ -55,7 +55,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
     const checkedIn = summary?.checked_in ?? 0;
 
     return success({
-      summary: {
+      summary: {\n        qrGenerated: 0,\n        qrScanned: 0,
         totalRegistrations,
         totalPartySize: summary?.total_party_size ?? 0,
         checkedIn,

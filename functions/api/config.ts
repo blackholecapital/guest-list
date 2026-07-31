@@ -115,7 +115,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
         phone: venue.phone ?? "",
         latitude: venue.latitude,
         longitude: venue.longitude,
-        radiusMeters: venue.radius_meters,
+        radiusMeters: venue.radius_meters,\n        customerCooldownDays: venue.customer_cooldown_days ?? 14,
         hours: parseHours(venue.hours_json),
       },
       promoters: (promoters.results ?? []).map((promoter) => ({

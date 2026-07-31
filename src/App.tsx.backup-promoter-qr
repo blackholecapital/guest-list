@@ -1124,11 +1124,11 @@ function PromotersDashboardPage() {
                     type="button"
                     onClick={() => copyPromoterLink(promoter.promoterSlug)}
                   >
-                    View Promoter Page
+                    Copy Link
                   </button>
                   <a
                     className="primary-button compact-button"
-                    href={`/promoter/${promoter.promoterSlug}`}
+                    href={`/p/${promoter.promoterSlug}`}
                     target="_blank"
                     rel="noreferrer"
                   >
@@ -1560,20 +1560,6 @@ function AdminPage() {
   );
 }
 
-function PromoterControlPage({ promoterSlug }: { promoterSlug: string }) {
-  return (
-    <Shell>
-      <main className="page narrow">
-        <section className="hero-card">
-          <p className="eyebrow">Promoter tools</p>
-          <h1>{promoterSlug}</h1>
-          <p>Generate QR codes and manage promoter passes here.</p>
-        </section>
-      </main>
-    </Shell>
-  );
-}
-
 function NotFoundPage() {
   return (
     <Shell>
@@ -1611,14 +1597,6 @@ export default function App() {
 
   if (path === "/admin") {
     return <AdminPage />;
-  }
-
-  if (path.startsWith("/promoter/")) {
-    const promoterSlug = path.split("/")[2]?.toLowerCase();
-
-    if (promoterSlug) {
-      return <PromoterControlPage promoterSlug={promoterSlug} />;
-    }
   }
 
   if (path.startsWith("/p/")) {

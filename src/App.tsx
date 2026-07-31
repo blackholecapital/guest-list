@@ -1600,13 +1600,34 @@ function AdminPage() {
 }
 
 function PromoterControlPage({ promoterSlug }: { promoterSlug: string }) {
+  const promoterName =
+    ({ mike: "Mike D.", sarah: "Sarah K.", james: "James R." } as Record<string,string>)[promoterSlug] ?? promoterSlug;
+
+  const [qrUrl, setQrUrl] = useState("");
+
+  async function generateQR() {
+    const ids: Record<string, number> = { mike: 1, sarah: 2, james: 3 };
+    const result = await api<any>("/api/generate-qr", {
+      method: "POST",
+      body: JSON.stringify({ promoterId: ids[promoterSlug] }),
+    });
+
+    if (!("error" in result)) {
+      setQrUrl(result.data.url);
+    }
+  }
+
   return (
     <Shell>
       <main className="page narrow">
         <section className="hero-card">
           <p className="eyebrow">Promoter tools</p>
-          <h1>{promoterSlug}</h1>
-          <p>Generate QR codes and manage promoter passes here.</p>
+          <h1>{promoterName}</h1>
+          <p>Manage QR access and promoter passes.</p>
+          <button className="primary-button" onClick={() => void generateQR()}>
+            Generate QR Code
+          </button>
+          {qrUrl && <p>{qrUrl}</p>}
         </section>
       </main>
     </Shell>

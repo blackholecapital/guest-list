@@ -1666,15 +1666,25 @@ function PromoterControlPage({ promoterSlug }: { promoterSlug:string }) {
   const [promoter,setPromoter] = useState<any>(null);
   const [qrUrl,setQrUrl] = useState("");
 
-  useEffect(()=>{
-    void api<any>("/api/promoters").then((r)=>{
+  useEffect(() => {
+    void api<any>("/api/promoters").then((r) => {
       if (!("error" in r)) {
-        setPromoter(
-          r.data.promoters.find((p:any)=>p.slug===promoterSlug)
+        const found = r.data.promoters.find(
+          (p: any) => p.slug === promoterSlug,
         );
+
+        if (found) {
+          setPromoter({
+            id: Number(found.id),
+            name: String(found.name),
+            slug: String(found.slug),
+            passLimit: Number(found.pass_limit ?? 0),
+            resetDays: Number(found.reset_days ?? 0),
+          });
+        }
       }
     });
-  },[promoterSlug]);
+  }, [promoterSlug]);
 
   async function generateQR(){
     const r = await api<any>("/api/generate-qr",{
@@ -1690,8 +1700,8 @@ function PromoterControlPage({ promoterSlug }: { promoterSlug:string }) {
         <section className="hero-card">
           <p className="eyebrow">Promoter controls</p>
           <h1>{promoter?.name ?? promoterSlug}</h1>
-          <p>Passes: {promoter?.pass_limit ?? 0}</p>
-          <p>Reset: {promoter?.reset_days ?? 0} days</p>
+          <p>Passes: {promoter?.passLimit ?? 0}</p>
+          <p>Reset: {promoter?.resetDays ?? 0} days</p>
           <button
             className="primary-button"
             disabled={!promoter}

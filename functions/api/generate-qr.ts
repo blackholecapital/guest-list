@@ -44,9 +44,32 @@ export const onRequestPost: PagesFunction<Env> = async ({
   qr.addData(url);
   qr.make();
 
-  const svg = qr.createSvgTag({
+  let svg = qr.createSvgTag({
     scalable: true,
   });
+
+  svg = svg.replace(
+    "</svg>",
+    `
+    <rect
+      x="38%"
+      y="38%"
+      width="24%"
+      height="24%"
+      fill="white"
+      rx="8"
+    />
+
+    <image
+      href="/assets/scores-logo.png"
+      x="41%"
+      y="41%"
+      width="18%"
+      height="18%"
+      preserveAspectRatio="xMidYMid meet"
+    />
+    </svg>`
+  );
 
   const qrCode =
     `data:image/svg+xml;base64,${btoa(svg)}`;

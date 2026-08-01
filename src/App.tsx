@@ -1187,13 +1187,14 @@ function PromotersDashboardPage() {
                 </div>
 
                 <div className="promoter-dashboard-actions">
-                  <button
+                  <a
                     className="secondary-button compact-button"
-                    type="button"
-                    onClick={() => copyPromoterLink(promoter.promoterSlug)}
+                    href={`/promoter/${promoter.promoterSlug}`}
+                    target="_blank"
+                    rel="noreferrer"
                   >
                     View Promoter Page
-                  </button>
+                  </a>
                   <a
                     className="primary-button compact-button"
                     href={`/p/${promoter.promoterSlug}`}

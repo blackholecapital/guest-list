@@ -623,7 +623,12 @@ function GuestListPage() {
         promoterName: String(guest.promoter ?? guest.promoterName ?? "Promoter"),
         promoterSlug: String(guest.promoterSlug ?? "promoter"),
         partySize: Number(guest.partySize ?? 1),
-        registeredAt: String(guest.createdAt ?? guest.registeredAt ?? new Date().toISOString()),
+        registeredAt: String(
+          guest.created_at ??
+          guest.createdAt ??
+          guest.registeredAt ??
+          new Date().toISOString()
+        ),
         status:
           guest.status === "checked_in"
             ? "checked_in"

@@ -319,7 +319,13 @@ function Shell({
   );
 }
 
-function PromoterPage({ promoterSlug }: { promoterSlug: string }) {
+function PromoterPage({
+  promoterSlug,
+  qrToken,
+}: {
+  promoterSlug: string;
+  qrToken?: string;
+}) {
   const promoterNames: Record<string, string> = {
     mike: "Mike D.",
     sarah: "Sarah K.",
@@ -583,13 +589,7 @@ function PromoterPage({ promoterSlug }: { promoterSlug: string }) {
   );
 }
 
-function GuestListPage({
-  promoterSlug,
-  qrToken,
-}: {
-  promoterSlug?: string;
-  qrToken?: string;
-}) {
+function GuestListPage() {
   const [guests, setGuests] = useState<DemoGuest[]>(DEMO_GUESTS);
   const [notice, setNotice] = useState<string | null>(
     "Showing demo guest-list data until live records are available.",
@@ -1791,7 +1791,7 @@ function JoinTokenPage({ token }: { token: string }) {
   }
 
   return (
-    <GuestListPage
+    <PromoterPage
       promoterSlug={data.promoterSlug}
       qrToken={token}
     />

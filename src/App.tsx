@@ -1124,12 +1124,6 @@ function PromotersDashboardPage() {
     });
   }, []);
 
-  function copyPromoterLink(slug: string) {
-    void navigator.clipboard.writeText(
-      `${window.location.origin}/p/${slug}`,
-    );
-  }
-
   return (
     <Shell>
       <main className="page wide">

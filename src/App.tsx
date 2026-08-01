@@ -1719,7 +1719,8 @@ function PromoterControlPage({ promoterSlug }: { promoterSlug: string }) {
     });
 
     if (!("error" in result)) {
-      setQrUrl(`${window.location.origin}${result.data.url}`);
+      setQrUrl(result.data.url);
+      setQrImage(result.data.qrCode);
     }
   }
 
@@ -1746,7 +1747,7 @@ function PromoterControlPage({ promoterSlug }: { promoterSlug: string }) {
             <div>
               <p>{qrUrl}</p>
               <img
-                src={`/api/generate-qr-image?data=${encodeURIComponent(qrUrl)}`}
+                src={qrImage}
                 alt="Promoter QR code"
               />
             </div>

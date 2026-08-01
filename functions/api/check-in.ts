@@ -288,11 +288,17 @@ export const onRequestPost: PagesFunction<Env> = async ({
       )
       .run();
 
-    await env.guest_followups.send({
-      phone: body.phone,
-      name: body.name,
-      smsOptIn: body.smsOptIn,
-    });
+    if (body.smsOptIn && env.guest_followups) {
+      try {
+        await env.guest_followups.send({
+          phone: body.phone,
+          name: body.name,
+          smsOptIn: true,
+        });
+      } catch (queueError) {
+        console.error("SMS follow-up enqueue failed", queueError);
+      }
+    }
 
     return success({
       guestId: result.meta.last_row_id,

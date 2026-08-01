@@ -1,6 +1,7 @@
 export interface Env {
   DB: D1Database;
   ADMIN_CONFIG_KEY?: string;
+  guest_followups?: Queue;
 }
 
 export interface VenueRow {

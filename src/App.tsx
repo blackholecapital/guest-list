@@ -369,7 +369,8 @@ function PromoterPage({ promoterSlug }: { promoterSlug: string }) {
         }>("/api/check-in", {
           method: "POST",
           body: JSON.stringify({
-            promoterSlug,
+            promoterSlug: promoterSlug ?? "",
+            qrToken,
             name: name.trim(),
             phone,
             partySize,
@@ -582,7 +583,13 @@ function PromoterPage({ promoterSlug }: { promoterSlug: string }) {
   );
 }
 
-function GuestListPage() {
+function GuestListPage({
+  promoterSlug,
+  qrToken,
+}: {
+  promoterSlug?: string;
+  qrToken?: string;
+}) {
   const [guests, setGuests] = useState<DemoGuest[]>(DEMO_GUESTS);
   const [notice, setNotice] = useState<string | null>(
     "Showing demo guest-list data until live records are available.",

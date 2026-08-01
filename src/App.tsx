@@ -856,15 +856,23 @@ function StatsPage() {
 
   const loadStats = useCallback(async () => {
     try {
-      const result = await api<any>("/api/stats");
+      const [statsResult, analyticsResult] = await Promise.all([
+        api<any>("/api/stats"),
+        api<any>("/api/analytics"),
+      ]);
 
-      if ("error" in result) {
+      if ("error" in statsResult) {
         setData(DEMO_STATS);
         setNotice("Showing demo statistics until live data is available.");
         return;
       }
 
-      const payload = result.data as any;
+      const payload = statsResult.data as any;
+      const analytics =
+        "error" in analyticsResult
+          ? {}
+          : analyticsResult.data;
+
       if (!payload?.summary || !Array.isArray(payload?.promoters)) {
         setData(DEMO_STATS);
         setNotice("Showing demo statistics until live data is available.");
@@ -878,6 +886,8 @@ function StatsPage() {
           checkedIn: Number(payload.summary.checkedIn ?? 0),
           notCheckedIn: Number(payload.summary.notCheckedIn ?? 0),
           conversionPercentage: Number(payload.summary.conversionPercentage ?? 0),
+          qrGenerated: Number(analytics.qrGenerated ?? 0),
+          qrScanned: Number(analytics.qrScanned ?? 0),
         },
         promoters: payload.promoters.map((promoter: any) => ({
           promoterId: Number(promoter.promoterId ?? 0),
@@ -889,7 +899,7 @@ function StatsPage() {
           notCheckedIn: Number(promoter.notCheckedIn ?? 0),
           redFlags: Number(promoter.notCheckedIn ?? 0),
           conversionPercentage: Number(promoter.conversionPercentage ?? 0),
-          passLimit: Number(promoter.passLimit ?? promoter.pass_limit ?? 10),
+          passLimit: Number(promoter.passes_remaining ?? promoter.passLimit ?? promoter.pass_limit ?? 0),
           resetDays: Number(promoter.resetDays ?? promoter.reset_days ?? 3),
         })),
       };
@@ -988,8 +998,8 @@ function StatsPage() {
               <p className="eyebrow">Promoter performance</p>
               <h2>Analytics Funnel</h2>
               <div className="mini-stat-grid">
-                <article><small>QR Generated</small><strong>0</strong></article>
-                <article><small>QR Scanned</small><strong>0</strong></article>
+                <article><small>QR Generated</small><strong>{(data.summary as any).qrGenerated ?? 0}</strong></article>
+                <article><small>QR Scanned</small><strong>{(data.summary as any).qrScanned ?? 0}</strong></article>
                 <article><small>Guest Registered</small><strong>{data.summary.totalRegistrations}</strong></article>
                 <article><small>Checked In</small><strong>{data.summary.checkedIn}</strong></article>
               </div>
@@ -1107,7 +1117,7 @@ function PromotersDashboardPage() {
 
   useEffect(() => {
     void Promise.all([
-      api<any>("/api/stats"),
+      api<any>("/api/analytics"),
       api<any>("/api/guest-list"),
     ]).then(([statsResult, guestResult]) => {
       if (!("error" in statsResult) && statsResult.data?.summary) {
@@ -1338,7 +1348,7 @@ function AdminPage() {
   }, []);
 
   useEffect(() => {
-    void api<any>("/api/stats").then((result) => {
+    void api<any>("/api/analytics").then((result) => {
       if ("error" in result || !Array.isArray(result.data?.promoters)) {
         return;
       }

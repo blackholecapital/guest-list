@@ -1,0 +1,29 @@
+{
+  "name": "guest-list-worker",
+  "main": "index.ts",
+  "compatibility_date": "2026-08-01",
+
+  "kv_namespaces": [
+    {
+      "binding": "GUEST_LIST_CACHE",
+      "id": "c57033bc73604e6ebc9dec0d451013df"
+    }
+  ],
+
+  "queues": {
+    "producers": [
+      {
+        "queue": "guest-followups",
+        "binding": "guest_followups"
+      }
+    ]
+  },
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "guest-list",
+      "database_id": "daa260f7-02a6-4e74-ab28-2a143aef3de9"
+    }
+  ]
+}

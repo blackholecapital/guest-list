@@ -331,6 +331,7 @@ function PromoterPage({ promoterSlug }: { promoterSlug: string }) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [partySize, setPartySize] = useState(1);
+  const [smsOptIn, setSmsOptIn] = useState(false);
   const [status, setStatus] = useState<
     "idle" | "locating" | "submitting" | "success" | "error"
   >("idle");
@@ -372,6 +373,7 @@ function PromoterPage({ promoterSlug }: { promoterSlug: string }) {
             name: name.trim(),
             phone,
             partySize,
+            smsOptIn,
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
             accuracyMeters: position.coords.accuracy,
@@ -487,6 +489,19 @@ function PromoterPage({ promoterSlug }: { promoterSlug: string }) {
                   Location is used to enforce the venue registration rules.
                 </p>
               </div>
+
+              <label className="checkbox-row">
+                <input
+                  type="checkbox"
+                  checked={smsOptIn}
+                  onChange={(event) => setSmsOptIn(event.target.checked)}
+                />
+                <span>
+                  Optional SMS updates. By opting in, you agree to receive
+                  guest list confirmations and venue updates. Message/data
+                  rates may apply.
+                </span>
+              </label>
 
               <button
                 className="primary-button full"
@@ -806,6 +821,17 @@ function GuestListPage() {
   );
 }
 
+async function savePromoterSettings(promoter:any) {
+  await api("/api/promoters", {
+    method: "POST",
+    body: JSON.stringify({
+      id: promoter.promoterId,
+      passLimit: promoter.passLimit ?? 10,
+      resetDays: promoter.resetDays ?? 3,
+    }),
+  });
+}
+
 function StatsPage() {
   const [data, setData] = useState(DEMO_STATS);
   const [notice, setNotice] = useState<string | null>(
@@ -915,6 +941,11 @@ function StatsPage() {
         {notice && <div className="notice-box">{notice}</div>}
 
         <section className="stat-grid">
+          <StatCard label="QR Generated" value={(data.summary as any).qrGenerated ?? 0} />
+          <StatCard label="QR Scanned" value={(data.summary as any).qrScanned ?? 0} />
+          <StatCard label="Guest Registered" value={data.summary.totalRegistrations} />
+          <StatCard label="Checked In" value={data.summary.checkedIn} />
+
           <StatCard
             label="Registrations"
             value={data.summary.totalRegistrations}
@@ -952,6 +983,36 @@ function StatsPage() {
             {data.promoters.map((promoter) => (
               <article className="promoter-stat-card" key={promoter.promoterSlug}>
                 <strong>{promoter.promoterName}</strong>
+
+                <select
+                  value={(promoter as any).passLimit ?? 10}
+                  onChange={(event) => {
+                    void savePromoterSettings({
+                      ...promoter,
+                      passLimit: Number(event.target.value),
+                    });
+                  }}
+                >
+                  <option value="0">0 passes</option>
+                  <option value="10">10 passes</option>
+                  <option value="25">25 passes</option>
+                  <option value="50">50 passes</option>
+                </select>
+
+                <select
+                  value={(promoter as any).resetDays ?? 3}
+                  onChange={(event) => {
+                    void savePromoterSettings({
+                      ...promoter,
+                      resetDays: Number(event.target.value),
+                    });
+                  }}
+                >
+                  <option value="1">Reset 1 day</option>
+                  <option value="3">Reset 3 days</option>
+                  <option value="7">Reset 7 days</option>
+                  <option value="30">Reset 30 days</option>
+                </select>
 
                 <div className="promoter-stat-row">
                   <span>Registrations</span>
@@ -1606,44 +1667,52 @@ function AdminPage() {
   );
 }
 
-function PromoterControlPage({ promoterSlug }: { promoterSlug: string }) {
-  const promoterName =
-    ({ mike: "Mike D.", sarah: "Sarah K.", james: "James R." } as Record<string,string>)[promoterSlug] ?? promoterSlug;
+function PromoterControlPage({ promoterSlug }: { promoterSlug:string }) {
+  const [promoter,setPromoter] = useState<any>(null);
+  const [qrUrl,setQrUrl] = useState("");
 
-  const [qrUrl, setQrUrl] = useState("");
-  const [promoterId, setPromoterId] = useState(0);
-
-  useEffect(() => {
-    void api<any>("/api/config").then((result) => {
-      if (!("error" in result)) {
-        const promoter = result.data.promoters.find((p:any) => p.slug === promoterSlug);
-        setPromoterId(Number(promoter?.id ?? 0));
+  useEffect(()=>{
+    void api<any>("/api/promoters").then((r)=>{
+      if (!("error" in r)) {
+        setPromoter(
+          r.data.promoters.find((p:any)=>p.slug===promoterSlug)
+        );
       }
     });
-  }, [promoterSlug]);
+  },[promoterSlug]);
 
-  async function generateQR() {
-    const result = await api<any>("/api/generate-qr", {
-      method: "POST",
-      body: JSON.stringify({ promoterId }),
+  async function generateQR(){
+    const r = await api<any>("/api/generate-qr",{
+      method:"POST",
+      body:JSON.stringify({promoterId:promoter.id})
     });
-
-    if (!("error" in result)) {
-      setQrUrl(result.data.url);
-    }
+    if (!("error" in r)) setQrUrl(`${window.location.origin}${r.data.url}`);
   }
 
   return (
     <Shell>
       <main className="page narrow">
         <section className="hero-card">
-          <p className="eyebrow">Promoter tools</p>
-          <h1>{promoterName}</h1>
-          <p>Manage QR access and promoter passes.</p>
-          <button className="primary-button" onClick={() => void generateQR()}>
+          <p className="eyebrow">Promoter controls</p>
+          <h1>{promoter?.name ?? promoterSlug}</h1>
+          <p>Passes: {promoter?.pass_limit ?? 0}</p>
+          <p>Reset: {promoter?.reset_days ?? 0} days</p>
+          <button
+            className="primary-button"
+            disabled={!promoter}
+            onClick={()=>void generateQR()}
+          >
             Generate QR Code
           </button>
-          {qrUrl && <p>{qrUrl}</p>}
+          {qrUrl && (
+            <div>
+              <p>{qrUrl}</p>
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(qrUrl)}`}
+                alt="Promoter QR code"
+              />
+            </div>
+          )}
         </section>
       </main>
     </Shell>

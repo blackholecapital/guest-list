@@ -123,6 +123,33 @@ export const onRequestPost: PagesFunction<Env> = async ({
   }
 
   try {
+    if (body.qrToken) {
+      const qr = await env.DB
+        .prepare(`
+          SELECT id, used_at
+          FROM qr_codes
+          WHERE token = ?
+        `)
+        .bind(body.qrToken)
+        .first<any>();
+
+      if (!qr) {
+        return failure(
+          "INVALID_QR",
+          "QR code is invalid.",
+          400,
+        );
+      }
+
+      if (qr.used_at) {
+        return failure(
+          "USED_QR",
+          "QR code already used.",
+          409,
+        );
+      }
+    }
+
     const promoter = await env.DB
       .prepare(`
         SELECT

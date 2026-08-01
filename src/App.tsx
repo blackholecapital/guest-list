@@ -1659,7 +1659,7 @@ function PromoterControlPage({ promoterSlug }: { promoterSlug:string }) {
       method:"POST",
       body:JSON.stringify({promoterId:promoter.id})
     });
-    if (!("error" in r)) setQrUrl(r.data.url);
+    if (!("error" in r)) setQrUrl(`${window.location.origin}${r.data.url}`);
   }
 
   return (
@@ -1677,7 +1677,15 @@ function PromoterControlPage({ promoterSlug }: { promoterSlug:string }) {
           >
             Generate QR Code
           </button>
-          {qrUrl && <p>{qrUrl}</p>}
+          {qrUrl && (
+            <div>
+              <p>{qrUrl}</p>
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(qrUrl)}`}
+                alt="Promoter QR code"
+              />
+            </div>
+          )}
         </section>
       </main>
     </Shell>

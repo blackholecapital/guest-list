@@ -1208,11 +1208,20 @@ function PromotersDashboardPage() {
                     <code>/p/{promoter.promoterSlug}</code>
                   </div>
 
-                  <img
-                    className="promoter-qr-image"
-                    src={`/assets/${promoter.promoterSlug}_guest_list_qr.png`}
-                    alt={`${promoter.promoterName} guest-list QR code`}
-                  />
+                  <div
+                    style={{
+                      border:`5px solid ${promoterColor(promoter.promoterSlug)}`,
+                      borderRadius:"18px",
+                      padding:"8px",
+                      background:"#111"
+                    }}
+                  >
+                    <img
+                      className="promoter-qr-image"
+                      src={`/assets/${promoter.promoterSlug}_guest_list_qr.png`}
+                      alt={`${promoter.promoterName} guest-list QR code`}
+                    />
+                  </div>
                 </div>
 
                 <div className="mini-stat-grid promoter-dashboard-stats">

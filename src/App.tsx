@@ -1685,6 +1685,7 @@ function AdminPage() {
 function PromoterControlPage({ promoterSlug }: { promoterSlug: string }) {
   const [promoter, setPromoter] = useState<any>(null);
   const [qrUrl, setQrUrl] = useState("");
+  const [qrImage, setQrImage] = useState("");
 
   useEffect(() => {
     void api<any>("/api/config").then((result) => {

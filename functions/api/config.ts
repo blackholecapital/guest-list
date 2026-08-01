@@ -98,7 +98,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
 
     const promoters = await env.DB
       .prepare(`
-        SELECT id, slug, name, active
+        SELECT id, slug, name, active, pass_limit, reset_days
         FROM promoters
         WHERE venue_id = ?
         ORDER BY name ASC
@@ -123,6 +123,8 @@ export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
         slug: promoter.slug,
         name: promoter.name,
         active: promoter.active === 1,
+        passLimit: promoter.pass_limit ?? 10,
+        resetDays: promoter.reset_days ?? 3,
         qrPath: `/p/${promoter.slug}`,
       })),
     });

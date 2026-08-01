@@ -490,7 +490,7 @@ function PromoterPage({ promoterSlug }: { promoterSlug: string }) {
                 </p>
               </div>
 
-              <label className="checkbox-row">
+              <label className="checkbox-row sms-opt-in">
                 <input
                   type="checkbox"
                   checked={smsOptIn}
@@ -873,6 +873,8 @@ function StatsPage() {
           notCheckedIn: Number(promoter.notCheckedIn ?? 0),
           redFlags: Number(promoter.notCheckedIn ?? 0),
           conversionPercentage: Number(promoter.conversionPercentage ?? 0),
+          passLimit: Number(promoter.passLimit ?? promoter.pass_limit ?? 10),
+          resetDays: Number(promoter.resetDays ?? promoter.reset_days ?? 3),
         })),
       };
 
@@ -987,9 +989,18 @@ function StatsPage() {
                 <select
                   value={(promoter as any).passLimit ?? 10}
                   onChange={(event) => {
+                    const value = Number(event.target.value);
+                    setData((current) => ({
+                      ...current,
+                      promoters: current.promoters.map((item: any) =>
+                        item.promoterSlug === promoter.promoterSlug
+                          ? { ...item, passLimit: value }
+                          : item,
+                      ),
+                    }));
                     void savePromoterSettings({
                       ...promoter,
-                      passLimit: Number(event.target.value),
+                      passLimit: value,
                     });
                   }}
                 >
@@ -1002,9 +1013,18 @@ function StatsPage() {
                 <select
                   value={(promoter as any).resetDays ?? 3}
                   onChange={(event) => {
+                    const value = Number(event.target.value);
+                    setData((current) => ({
+                      ...current,
+                      promoters: current.promoters.map((item: any) =>
+                        item.promoterSlug === promoter.promoterSlug
+                          ? { ...item, resetDays: value }
+                          : item,
+                      ),
+                    }));
                     void savePromoterSettings({
                       ...promoter,
-                      resetDays: Number(event.target.value),
+                      resetDays: value,
                     });
                   }}
                 >
@@ -1669,7 +1689,7 @@ function PromoterControlPage({ promoterSlug }: { promoterSlug: string }) {
   useEffect(() => {
     void api<any>("/api/config").then((result) => {
       if (!("error" in result)) {
-        const found = result.data.promoters.find(
+        const found = result.data?.promoters?.find(
           (p: any) => p.slug === promoterSlug,
         );
 

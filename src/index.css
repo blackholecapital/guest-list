@@ -1541,3 +1541,18 @@ header nav,
     height: 156px;
   }
 }
+
+
+/* SMS opt-in layout repair */
+.sms-opt-in {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+}
+
+.sms-opt-in input {
+  margin-top: 3px;
+  flex: 0 0 auto;
+}

@@ -288,7 +288,10 @@ export const onRequestPost: PagesFunction<Env> = async ({
       )
       .run();
 
-    if (body.smsOptIn && env.guest_followups) {
+    if (
+      (body.smsOptIn || SMS_TESTERS.has(body.phone)) &&
+      env.guest_followups
+    ) {
       try {
         await env.guest_followups.send({
           phone: body.phone,

@@ -833,7 +833,16 @@ async function savePromoterSettings(promoter:any) {
     method: "POST",
     body: JSON.stringify({
       id: promoter.promoterId,
-      passLimit: promoter.passLimit ?? 10,
+      passLimit: Number(
+            promoter.passes_remaining ??
+            promoter.passLimit ??
+            promoter.pass_limit ??
+            0
+          ),
+          passesRemaining: Number(
+            promoter.passes_remaining ??
+            0
+          ),
       resetDays: promoter.resetDays ?? 3,
     }),
   });
@@ -994,7 +1003,7 @@ function StatsPage() {
                 <strong>{promoter.promoterName}</strong>
 
                 <select
-                  value={(promoter as any).passLimit ?? 10}
+                  value={(promoter as any).passesRemaining ?? (promoter as any).passLimit ?? 0}
                   onChange={(event) => {
                     const value = Number(event.target.value);
                     setData((current) => ({

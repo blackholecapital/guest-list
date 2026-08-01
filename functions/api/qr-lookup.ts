@@ -8,14 +8,19 @@ export const onRequestGet: PagesFunction<Env> = async ({
   const token = url.searchParams.get("token");
 
   if (!token) {
-    return failure("BAD_REQUEST", "Missing token.", 400);
+    return failure(
+      "BAD_REQUEST",
+      "Missing token.",
+      400,
+    );
   }
 
   const qr = await env.DB.prepare(`
     SELECT
       q.id,
       q.token,
-      q.used_at,
+      q.max_uses,
+      q.used_count,
       q.expires_at,
       p.id AS promoter_id,
       p.slug AS promoter_slug,
@@ -36,13 +41,21 @@ export const onRequestGet: PagesFunction<Env> = async ({
     );
   }
 
-  if (qr.used_at) {
+  if (qr.used_count >= qr.max_uses) {
     return failure(
-      "USED_QR",
-      "QR code already used.",
+      "QR_LIMIT_REACHED",
+      "This QR code has reached its limit.",
       409,
     );
   }
+
+  await env.DB.prepare(`
+    UPDATE qr_codes
+    SET used_count = used_count + 1
+    WHERE id = ?
+  `)
+  .bind(qr.id)
+  .run();
 
   return success({
     token: qr.token,

@@ -41,6 +41,7 @@ export const onRequestPost: PagesFunction<Env> = async ({
   const qrDataUrl = await QRCode.toDataURL(url, {
     width: 512,
     margin: 2,
+    errorCorrectionLevel: "M",
   });
 
   return success({

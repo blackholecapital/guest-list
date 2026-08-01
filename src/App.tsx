@@ -1,3 +1,6 @@
+import VipPackages from "./VipPackages";
+import { promoterColor } from "./promoter-theme";
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 
@@ -1782,12 +1785,24 @@ function PromoterControlPage({ promoterSlug }: { promoterSlug: string }) {
           {qrUrl && (
             <div>
               <p>{qrUrl}</p>
-              <img
-                src={qrImage}
-                alt="Promoter QR code"
-              />
+
+              <div
+                style={{
+                  border:`6px solid ${promoterColor(promoterSlug)}`,
+                  borderRadius:"20px",
+                  padding:"12px",
+                  display:"inline-block"
+                }}
+              >
+                <img
+                  src={qrImage}
+                  alt="Promoter QR code"
+                />
+              </div>
             </div>
           )}
+
+          <VipPackages />
         </section>
       </main>
     </Shell>

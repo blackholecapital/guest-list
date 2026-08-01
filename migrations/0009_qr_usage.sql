@@ -1,0 +1,2 @@
+ALTER TABLE qr_codes ADD COLUMN used_at TEXT;
+ALTER TABLE guests ADD COLUMN qr_token TEXT;

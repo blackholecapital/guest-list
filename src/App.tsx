@@ -1759,6 +1759,38 @@ function PromoterControlPage({ promoterSlug }: { promoterSlug: string }) {
   );
 }
 
+
+function JoinTokenPage({ token }: { token: string }) {
+  const [data, setData] = useState<any>(null);
+
+  useEffect(() => {
+    void api<any>(`/api/qr-lookup?token=${token}`).then((r) => {
+      if (!("error" in r)) {
+        setData(r.data);
+      }
+    });
+  }, [token]);
+
+  if (!data) {
+    return (
+      <Shell>
+        <main className="page narrow centered">
+          <section className="hero-card">
+            <h1>Loading guest list...</h1>
+          </section>
+        </main>
+      </Shell>
+    );
+  }
+
+  return (
+    <GuestPage
+      promoterSlug={data.promoterSlug}
+      qrToken={token}
+    />
+  );
+}
+
 function NotFoundPage() {
   return (
     <Shell>
@@ -1803,6 +1835,14 @@ export default function App() {
 
     if (promoterSlug) {
       return <PromoterControlPage promoterSlug={promoterSlug} />;
+    }
+  }
+
+  if (path.startsWith("/join/")) {
+    const token = path.split("/")[2];
+
+    if (token) {
+      return <JoinTokenPage token={token} />;
     }
   }
 

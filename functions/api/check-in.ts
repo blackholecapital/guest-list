@@ -25,6 +25,7 @@ interface CheckInBody {
   longitude: number;
   accuracyMeters?: number;
   smsOptIn?: boolean;
+  qrToken?: string;
 }
 
 function parseBody(
@@ -55,6 +56,10 @@ function parseBody(
       : Number(input.accuracyMeters);
 
   const smsOptIn = Boolean(input.smsOptIn);
+  const qrToken =
+    typeof input.qrToken === "string"
+      ? input.qrToken
+      : undefined;
 
   if (
     !promoterSlug ||
@@ -89,6 +94,7 @@ function parseBody(
     longitude,
     accuracyMeters,
     smsOptIn,
+    qrToken,
   };
 }
 
@@ -234,9 +240,10 @@ export const onRequestPost: PagesFunction<Env> = async ({
           submitted_accuracy_meters,
           calculated_distance_meters,
           event_date,
-          sms_opt_in
+          sms_opt_in,
+          qr_token
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `)
       .bind(
         venue.id,
@@ -250,6 +257,7 @@ export const onRequestPost: PagesFunction<Env> = async ({
         distanceMeters,
         eventDate,
         body.smsOptIn ? 1 : 0,
+        body.qrToken ?? null,
       )
       .run();
 

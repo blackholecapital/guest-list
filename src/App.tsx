@@ -1746,7 +1746,7 @@ function PromoterControlPage({ promoterSlug }: { promoterSlug: string }) {
             <div>
               <p>{qrUrl}</p>
               <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(qrUrl)}`}
+                src={`/api/generate-qr-image?data=${encodeURIComponent(qrUrl)}`}
                 alt="Promoter QR code"
               />
             </div>

@@ -1662,14 +1662,14 @@ function AdminPage() {
   );
 }
 
-function PromoterControlPage({ promoterSlug }: { promoterSlug:string }) {
-  const [promoter,setPromoter] = useState<any>(null);
-  const [qrUrl,setQrUrl] = useState("");
+function PromoterControlPage({ promoterSlug }: { promoterSlug: string }) {
+  const [promoter, setPromoter] = useState<any>(null);
+  const [qrUrl, setQrUrl] = useState("");
 
   useEffect(() => {
-    void api<any>("/api/promoters").then((r) => {
-      if (!("error" in r)) {
-        const found = r.data.promoters.find(
+    void api<any>("/api/config").then((result) => {
+      if (!("error" in result)) {
+        const found = result.data.promoters.find(
           (p: any) => p.slug === promoterSlug,
         );
 
@@ -1678,20 +1678,29 @@ function PromoterControlPage({ promoterSlug }: { promoterSlug:string }) {
             id: Number(found.id),
             name: String(found.name),
             slug: String(found.slug),
-            passLimit: Number(found.pass_limit ?? 0),
-            resetDays: Number(found.reset_days ?? 0),
+            passLimit: Number(found.pass_limit ?? 10),
+            resetDays: Number(found.reset_days ?? 3),
           });
         }
       }
     });
   }, [promoterSlug]);
 
-  async function generateQR(){
-    const r = await api<any>("/api/generate-qr",{
-      method:"POST",
-      body:JSON.stringify({promoterId:promoter.id})
+  async function generateQR() {
+    if (!promoter?.id) {
+      return;
+    }
+
+    const result = await api<any>("/api/generate-qr", {
+      method: "POST",
+      body: JSON.stringify({
+        promoterId: promoter.id,
+      }),
     });
-    if (!("error" in r)) setQrUrl(`${window.location.origin}${r.data.url}`);
+
+    if (!("error" in result)) {
+      setQrUrl(`${window.location.origin}${result.data.url}`);
+    }
   }
 
   return (
@@ -1699,16 +1708,20 @@ function PromoterControlPage({ promoterSlug }: { promoterSlug:string }) {
       <main className="page narrow">
         <section className="hero-card">
           <p className="eyebrow">Promoter controls</p>
+
           <h1>{promoter?.name ?? promoterSlug}</h1>
+
           <p>Passes: {promoter?.passLimit ?? 0}</p>
           <p>Reset: {promoter?.resetDays ?? 0} days</p>
+
           <button
             className="primary-button"
             disabled={!promoter}
-            onClick={()=>void generateQR()}
+            onClick={() => void generateQR()}
           >
             Generate QR Code
           </button>
+
           {qrUrl && (
             <div>
               <p>{qrUrl}</p>

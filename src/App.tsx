@@ -980,13 +980,6 @@ function StatsPage() {
                 <select
                   value={(promoter as any).passLimit ?? 10}
                   onChange={(event) => {
-                    setPromoterStats((current) =>
-                      current.map((item) =>
-                        item.promoterSlug === promoter.promoterSlug
-                          ? { ...item, passLimit: Number(event.target.value) }
-                          : item
-                      )
-                    );
                     void savePromoterSettings({
                       ...promoter,
                       passLimit: Number(event.target.value),
@@ -1002,13 +995,6 @@ function StatsPage() {
                 <select
                   value={(promoter as any).resetDays ?? 3}
                   onChange={(event) => {
-                    setPromoterStats((current) =>
-                      current.map((item) =>
-                        item.promoterSlug === promoter.promoterSlug
-                          ? { ...item, resetDays: Number(event.target.value) }
-                          : item
-                      )
-                    );
                     void savePromoterSettings({
                       ...promoter,
                       resetDays: Number(event.target.value),

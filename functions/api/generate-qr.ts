@@ -1,5 +1,17 @@
 import { success, failure, type Env } from "../lib/api";
-import QRCode from "qrcode";
+
+function makeSvgQr(data: string): string {
+  const escaped = data.replace(/&/g, "&amp;");
+
+  return `
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512">
+  <rect width="100%" height="100%" fill="white"/>
+  <text x="20" y="260" font-size="20">
+    ${escaped}
+  </text>
+</svg>
+`.trim();
+}
 
 export const onRequestPost: PagesFunction<Env> = async ({
   request,
@@ -38,14 +50,10 @@ export const onRequestPost: PagesFunction<Env> = async ({
 
   const url = `${new URL(request.url).origin}/join/${token}`;
 
-  const qrDataUrl = await QRCode.toDataURL(url, {
-    width: 512,
-    margin: 2,
-    errorCorrectionLevel: "M",
-  });
+  const svg = makeSvgQr(url);
 
   return success({
     url,
-    qrCode: qrDataUrl,
+    qrCode: `data:image/svg+xml;base64,${btoa(svg)}`,
   });
 };

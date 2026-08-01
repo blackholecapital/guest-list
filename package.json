@@ -15,7 +15,6 @@
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.0",
-    "qrcode": "file:vendor/qr-tools/qrcode-1.5.4.tgz",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "typescript": "~5.8.3"

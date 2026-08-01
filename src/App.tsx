@@ -806,6 +806,17 @@ function GuestListPage() {
   );
 }
 
+async function savePromoterSettings(promoter:any) {
+  await api("/api/promoters", {
+    method: "POST",
+    body: JSON.stringify({
+      id: promoter.promoterId,
+      passLimit: promoter.passLimit ?? 10,
+      resetDays: promoter.resetDays ?? 3,
+    }),
+  });
+}
+
 function StatsPage() {
   const [data, setData] = useState(DEMO_STATS);
   const [notice, setNotice] = useState<string | null>(

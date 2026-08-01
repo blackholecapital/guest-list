@@ -868,7 +868,7 @@ function StatsPage() {
         <div className="page-heading">
           <div>
             <p className="eyebrow">Performance</p>
-            <h1>Stats Dashboard</h1>
+            <h1>Analytics Dashboard</h1>
           </div>
         </div>
 
@@ -915,6 +915,11 @@ function StatsPage() {
         {notice && <div className="notice-box">{notice}</div>}
 
         <section className="stat-grid">
+          <StatCard label="QR Generated" value={(data.summary as any).qrGenerated ?? 0} />
+          <StatCard label="QR Scanned" value={(data.summary as any).qrScanned ?? 0} />
+          <StatCard label="Guest Registered" value={data.summary.totalRegistrations} />
+          <StatCard label="Checked In" value={data.summary.checkedIn} />
+
           <StatCard
             label="Registrations"
             value={data.summary.totalRegistrations}
@@ -945,6 +950,42 @@ function StatsPage() {
             {data.promoters.map((promoter) => (
               <article className="promoter-stat-card" key={promoter.promoterSlug}>
                 <strong>{promoter.promoterName}</strong>
+
+                <select
+                  value={(promoter as any).passLimit ?? 10}
+                  onChange={(event) => {
+                    setPromoterStats((current) =>
+                      current.map((item) =>
+                        item.promoterSlug === promoter.promoterSlug
+                          ? { ...item, passLimit: Number(event.target.value) }
+                          : item
+                      )
+                    );
+                  }}
+                >
+                  <option value="0">0 passes</option>
+                  <option value="10">10 passes</option>
+                  <option value="25">25 passes</option>
+                  <option value="50">50 passes</option>
+                </select>
+
+                <select
+                  value={(promoter as any).resetDays ?? 3}
+                  onChange={(event) => {
+                    setPromoterStats((current) =>
+                      current.map((item) =>
+                        item.promoterSlug === promoter.promoterSlug
+                          ? { ...item, resetDays: Number(event.target.value) }
+                          : item
+                      )
+                    );
+                  }}
+                >
+                  <option value="1">Reset 1 day</option>
+                  <option value="3">Reset 3 days</option>
+                  <option value="7">Reset 7 days</option>
+                  <option value="30">Reset 30 days</option>
+                </select>
 
                 <div className="promoter-stat-row">
                   <span>Registrations</span>
@@ -1599,41 +1640,41 @@ function AdminPage() {
   );
 }
 
-function PromoterControlPage({ promoterSlug }: { promoterSlug: string }) {
-  const promoterName =
-    ({ mike: "Mike D.", sarah: "Sarah K.", james: "James R." } as Record<string,string>)[promoterSlug] ?? promoterSlug;
+function PromoterControlPage({ promoterSlug }: { promoterSlug:string }) {
+  const [promoter,setPromoter] = useState<any>(null);
+  const [qrUrl,setQrUrl] = useState("");
 
-  const [qrUrl, setQrUrl] = useState("");
-  const [promoterId, setPromoterId] = useState(0);
-
-  useEffect(() => {
-    void api<any>("/api/config").then((result) => {
-      if (!("error" in result)) {
-        const promoter = result.data.promoters.find((p:any) => p.slug === promoterSlug);
-        setPromoterId(Number(promoter?.id ?? 0));
+  useEffect(()=>{
+    void api<any>("/api/promoters").then((r)=>{
+      if (!("error" in r)) {
+        setPromoter(
+          r.data.promoters.find((p:any)=>p.slug===promoterSlug)
+        );
       }
     });
-  }, [promoterSlug]);
+  },[promoterSlug]);
 
-  async function generateQR() {
-    const result = await api<any>("/api/generate-qr", {
-      method: "POST",
-      body: JSON.stringify({ promoterId }),
+  async function generateQR(){
+    const r = await api<any>("/api/generate-qr",{
+      method:"POST",
+      body:JSON.stringify({promoterId:promoter.id})
     });
-
-    if (!("error" in result)) {
-      setQrUrl(result.data.url);
-    }
+    if (!("error" in r)) setQrUrl(r.data.url);
   }
 
   return (
     <Shell>
       <main className="page narrow">
         <section className="hero-card">
-          <p className="eyebrow">Promoter tools</p>
-          <h1>{promoterName}</h1>
-          <p>Manage QR access and promoter passes.</p>
-          <button className="primary-button" onClick={() => void generateQR()}>
+          <p className="eyebrow">Promoter controls</p>
+          <h1>{promoter?.name ?? promoterSlug}</h1>
+          <p>Passes: {promoter?.pass_limit ?? 0}</p>
+          <p>Reset: {promoter?.reset_days ?? 0} days</p>
+          <button
+            className="primary-button"
+            disabled={!promoter}
+            onClick={()=>void generateQR()}
+          >
             Generate QR Code
           </button>
           {qrUrl && <p>{qrUrl}</p>}

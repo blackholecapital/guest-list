@@ -1784,7 +1784,7 @@ function JoinTokenPage({ token }: { token: string }) {
   }
 
   return (
-    <GuestPage
+    <GuestListPage
       promoterSlug={data.promoterSlug}
       qrToken={token}
     />

@@ -1740,8 +1740,12 @@ function PromoterControlPage({ promoterSlug }: { promoterSlug: string }) {
 
           <h1>{promoter?.name ?? promoterSlug}</h1>
 
-          <p>Passes: {promoter?.passLimit ?? 0}</p>
-          <p>Reset: {promoter?.resetDays ?? 0} days</p>
+          <p>
+            Passes Remaining: {promoter?.passes_remaining ?? 0}
+          </p>
+          <p>
+            Reset: {promoter?.reset_days ?? 0} days
+          </p>
 
           <button
             className="primary-button"

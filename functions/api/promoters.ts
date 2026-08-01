@@ -1,27 +1,60 @@
 import { success, failure, type Env } from "../lib/api";
 
-export const onRequestGet: PagesFunction<Env> = async ({env}) => {
-  const rows = await env.DB.prepare(`
-    SELECT id,name,slug,pass_limit,reset_days,passes_used
-    FROM promoters
-    ORDER BY name
-  `).all();
+export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
+  try {
+    const rows = await env.DB.prepare(`
+      SELECT
+        p.id,
+        p.slug,
+        p.name,
+        p.active,
+        p.pass_limit,
+        p.reset_days,
 
-  return success({promoters: rows.results ?? []});
-};
+        COALESCE(
+          SUM(g.party_size),
+          0
+        ) AS passes_used,
 
-export const onRequestPost: PagesFunction<Env> = async ({request,env}) => {
-  const body = await request.json() as any;
+        (
+          p.pass_limit -
+          COALESCE(SUM(g.party_size),0)
+        ) AS passes_remaining,
 
-  await env.DB.prepare(`
-    UPDATE promoters
-    SET pass_limit=?, reset_days=?
-    WHERE id=?
-  `).bind(
-    body.passLimit,
-    body.resetDays,
-    body.id
-  ).run();
+        (
+          SELECT COUNT(*)
+          FROM qr_codes q
+          WHERE q.promoter_id = p.id
+        ) AS qr_generated,
 
-  return success({saved:true});
+        (
+          SELECT COALESCE(SUM(q.used_count),0)
+          FROM qr_codes q
+          WHERE q.promoter_id = p.id
+        ) AS qr_scanned
+
+      FROM promoters p
+
+      LEFT JOIN guests g
+        ON g.promoter_id = p.id
+
+      GROUP BY p.id
+
+      ORDER BY p.id
+    `)
+    .all();
+
+    return success({
+      promoters: rows.results,
+    });
+
+  } catch (error) {
+    console.error(error);
+
+    return failure(
+      "DATABASE_ERROR",
+      "Unable to load promoters.",
+      500,
+    );
+  }
 };

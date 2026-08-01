@@ -972,6 +972,10 @@ function StatsPage() {
                           : item
                       )
                     );
+                    void savePromoterSettings({
+                      ...promoter,
+                      passLimit: Number(event.target.value),
+                    });
                   }}
                 >
                   <option value="0">0 passes</option>
@@ -990,6 +994,10 @@ function StatsPage() {
                           : item
                       )
                     );
+                    void savePromoterSettings({
+                      ...promoter,
+                      resetDays: Number(event.target.value),
+                    });
                   }}
                 >
                   <option value="1">Reset 1 day</option>

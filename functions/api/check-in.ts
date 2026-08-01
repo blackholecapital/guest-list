@@ -24,6 +24,7 @@ interface CheckInBody {
   latitude: number;
   longitude: number;
   accuracyMeters?: number;
+  smsOptIn?: boolean;
 }
 
 function parseBody(
@@ -52,6 +53,8 @@ function parseBody(
     input.accuracyMeters === undefined
       ? undefined
       : Number(input.accuracyMeters);
+
+  const smsOptIn = Boolean(input.smsOptIn);
 
   if (
     !promoterSlug ||
@@ -85,6 +88,7 @@ function parseBody(
     latitude,
     longitude,
     accuracyMeters,
+    smsOptIn,
   };
 }
 
@@ -229,9 +233,10 @@ export const onRequestPost: PagesFunction<Env> = async ({
           submitted_longitude,
           submitted_accuracy_meters,
           calculated_distance_meters,
-          event_date
+          event_date,
+          sms_opt_in
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `)
       .bind(
         venue.id,
@@ -244,8 +249,15 @@ export const onRequestPost: PagesFunction<Env> = async ({
         body.accuracyMeters ?? null,
         distanceMeters,
         eventDate,
+        body.smsOptIn ? 1 : 0,
       )
       .run();
+
+    await env.guest_followups.send({
+      phone: body.phone,
+      name: body.name,
+      smsOptIn: body.smsOptIn,
+    });
 
     return success({
       guestId: result.meta.last_row_id,

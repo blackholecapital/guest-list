@@ -331,6 +331,7 @@ function PromoterPage({ promoterSlug }: { promoterSlug: string }) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [partySize, setPartySize] = useState(1);
+  const [smsOptIn, setSmsOptIn] = useState(false);
   const [status, setStatus] = useState<
     "idle" | "locating" | "submitting" | "success" | "error"
   >("idle");
@@ -372,6 +373,7 @@ function PromoterPage({ promoterSlug }: { promoterSlug: string }) {
             name: name.trim(),
             phone,
             partySize,
+            smsOptIn,
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
             accuracyMeters: position.coords.accuracy,
@@ -487,6 +489,19 @@ function PromoterPage({ promoterSlug }: { promoterSlug: string }) {
                   Location is used to enforce the venue registration rules.
                 </p>
               </div>
+
+              <label className="checkbox-row">
+                <input
+                  type="checkbox"
+                  checked={smsOptIn}
+                  onChange={(event) => setSmsOptIn(event.target.checked)}
+                />
+                <span>
+                  Optional SMS updates. By opting in, you agree to receive
+                  guest list confirmations and venue updates. Message/data
+                  rates may apply.
+                </span>
+              </label>
 
               <button
                 className="primary-button full"

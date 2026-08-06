@@ -1358,27 +1358,10 @@ export function PromotersDashboardPage() {
               <h2>All Promoter Tickets</h2>
             </div>
           </div>
-          <div className="promoter-ticket-sheet">
-            <img
-              src="/assets/scores_tampa_all_3_qr_test_page.png"
-              alt="Combined Scores Tampa promoter ticket QR test page"
-            />
-            <span
-              aria-hidden="true"
-              className="promoter-ticket-qr-band promoter-ticket-qr-band-james"
-              style={{ borderColor: promoterColor("james") }}
-            />
-            <span
-              aria-hidden="true"
-              className="promoter-ticket-qr-band promoter-ticket-qr-band-sarah"
-              style={{ borderColor: promoterColor("sarah") }}
-            />
-            <span
-              aria-hidden="true"
-              className="promoter-ticket-qr-band promoter-ticket-qr-band-mike"
-              style={{ borderColor: promoterColor("mike") }}
-            />
-          </div>
+          <img
+            src="/assets/scores_tampa_all_3_qr_test_page.png"
+            alt="Combined Scores Tampa promoter ticket QR test page"
+          />
         </section>
       </main>
     </Shell>

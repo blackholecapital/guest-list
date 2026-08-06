@@ -1516,39 +1516,12 @@ header nav,
   padding: 24px;
 }
 
-.promoter-ticket-sheet {
-  position: relative;
-}
-
 .promoter-ticket-preview img {
   display: block;
   width: 100%;
   height: auto;
   border-radius: 16px;
   border: 1px solid var(--border);
-}
-
-.promoter-ticket-qr-band {
-  position: absolute;
-  left: 70.1%;
-  width: 23.7%;
-  height: 20.8%;
-  border: clamp(3px, 0.45vw, 7px) solid;
-  border-radius: 1.4%;
-  pointer-events: none;
-  box-sizing: border-box;
-}
-
-.promoter-ticket-qr-band-james {
-  top: 8.9%;
-}
-
-.promoter-ticket-qr-band-sarah {
-  top: 36.2%;
-}
-
-.promoter-ticket-qr-band-mike {
-  top: 64.2%;
 }
 
 .admin-promoter-heading {

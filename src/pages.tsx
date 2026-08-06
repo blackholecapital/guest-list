@@ -1055,7 +1055,11 @@ export function StatsPage() {
 
           <div className="promoter-stats-grid">
             {data.promoters.map((promoter) => (
-              <article className="promoter-stat-card" key={promoter.promoterSlug}>
+              <article
+                className="promoter-stat-card promoter-color-card"
+                key={promoter.promoterSlug}
+                style={{ borderColor: promoterColor(promoter.promoterSlug) }}
+              >
                 <strong>{promoter.promoterName}</strong>
 
                 <select
@@ -1238,7 +1242,11 @@ export function PromotersDashboardPage() {
               .slice(0, 3);
 
             return (
-              <article className="data-card promoter-dashboard-card" key={promoter.promoterSlug}>
+              <article
+                className="data-card promoter-dashboard-card promoter-color-card"
+                key={promoter.promoterSlug}
+                style={{ borderColor: promoterColor(promoter.promoterSlug) }}
+              >
                 <div className="promoter-dashboard-head">
                   <div>
                     <p className="eyebrow">Promoter</p>
@@ -1334,10 +1342,27 @@ export function PromotersDashboardPage() {
               <h2>All Promoter Tickets</h2>
             </div>
           </div>
-          <img
-            src="/assets/scores_tampa_all_3_qr_test_page.png"
-            alt="Combined Scores Tampa promoter ticket QR test page"
-          />
+          <div className="promoter-ticket-sheet">
+            <img
+              src="/assets/scores_tampa_all_3_qr_test_page.png"
+              alt="Combined Scores Tampa promoter ticket QR test page"
+            />
+            <span
+              aria-hidden="true"
+              className="promoter-ticket-qr-band promoter-ticket-qr-band-james"
+              style={{ borderColor: promoterColor("james") }}
+            />
+            <span
+              aria-hidden="true"
+              className="promoter-ticket-qr-band promoter-ticket-qr-band-sarah"
+              style={{ borderColor: promoterColor("sarah") }}
+            />
+            <span
+              aria-hidden="true"
+              className="promoter-ticket-qr-band promoter-ticket-qr-band-mike"
+              style={{ borderColor: promoterColor("mike") }}
+            />
+          </div>
         </section>
       </main>
     </Shell>
@@ -1839,7 +1864,11 @@ export function AdminPage() {
 
           <div className="promoter-stats-grid">
             {promoterStats.map((promoter) => (
-              <article className="promoter-stat-card" key={promoter.promoterSlug}>
+              <article
+                className="promoter-stat-card promoter-color-card"
+                key={promoter.promoterSlug}
+                style={{ borderColor: promoterColor(promoter.promoterSlug) }}
+              >
                 <strong>{promoter.promoterName}</strong>
                 <div className="promoter-stat-row">
                   <span>Registrations</span>

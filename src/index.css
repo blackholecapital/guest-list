@@ -1132,6 +1132,10 @@ a.venue-detail:hover {
   margin-bottom: 4px;
 }
 
+.guest-promoter-name {
+  font-size: 17px;
+}
+
 .guest-card-actions {
   margin-top: 14px;
   display: flex;

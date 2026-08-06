@@ -655,9 +655,16 @@ export function GuestListPage() {
         id: Number(guest.id ?? index + 1),
         name: String(guest.name ?? "Guest"),
         phone: String(guest.phone ?? ""),
-        promoterName: String(guest.promoter ?? guest.promoterName ?? "Promoter"),
-        promoterSlug: String(guest.promoterSlug ?? "promoter"),
-        partySize: Number(guest.partySize ?? 1),
+        promoterName: String(
+          guest.promoter_name ??
+          guest.promoter ??
+          guest.promoterName ??
+          "Promoter",
+        ),
+        promoterSlug: String(
+          guest.promoter_slug ?? guest.promoterSlug ?? "promoter",
+        ).toLowerCase(),
+        partySize: Number(guest.party_size ?? guest.partySize ?? 1),
         registeredAt: String(
           guest.created_at ??
           guest.createdAt ??
@@ -804,7 +811,11 @@ export function GuestListPage() {
 
         <section className="guest-list-grid">
           {filteredGuests.map((guest) => (
-            <article className="guest-list-card" key={guest.id}>
+            <article
+              className="guest-list-card promoter-color-card"
+              key={guest.id}
+              style={{ borderColor: promoterColor(guest.promoterSlug) }}
+            >
               <div className="guest-card-top">
                 <div>
                   <strong>{guest.name}</strong>
@@ -830,8 +841,13 @@ export function GuestListPage() {
 
               <div className="guest-card-meta">
                 <div>
-                  <small>Promoter</small>
-                  <strong>{guest.promoterName}</strong>
+                  <small>Invited by</small>
+                  <strong
+                    className="guest-promoter-name"
+                    style={{ color: promoterColor(guest.promoterSlug) }}
+                  >
+                    {guest.promoterName}
+                  </strong>
                 </div>
                 <div>
                   <small>Party</small>

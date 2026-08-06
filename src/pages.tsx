@@ -1214,7 +1214,7 @@ export function PromotersDashboardPage() {
 
   useEffect(() => {
     void Promise.all([
-      api<any>("/api/analytics"),
+      api<any>("/api/stats"),
       api<any>("/api/guest-list"),
       api<any>("/api/promoters"),
     ]).then(([statsResult, guestResult, promotersResult]) => {
@@ -1300,6 +1300,7 @@ export function PromotersDashboardPage() {
             const recentGuests = guests
               .filter((guest) => guest.promoterSlug === promoter.promoterSlug)
               .slice(0, 3);
+            const resetDays = Number((promoter as any).resetDays ?? 1);
 
             return (
               <article
@@ -1338,8 +1339,7 @@ export function PromotersDashboardPage() {
                   <article>
                     <small>Pass Reset</small>
                     <strong>
-                      Every {(promoter as any).resetDays ?? 1}{" "}
-                      {(promoter as any).resetDays === 1 ? "day" : "days"}
+                      Every {resetDays} {resetDays === 1 ? "day" : "days"}
                     </strong>
                   </article>
                   <article>

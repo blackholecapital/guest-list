@@ -464,62 +464,6 @@ function PromoterPage({
             <p className="muted">
               Have your phone ready when you reach the door.
             </p>
-          
-
-        <section className="data-card">
-
-          <h2>Demo Testing</h2>
-
-          <label>
-            Test Phone
-            <input
-              value={demoPhone}
-              onChange={(e)=>setDemoPhone(e.target.value)}
-            />
-          </label>
-
-          <label>
-            <input
-              type="checkbox"
-              checked={demoUnlimited}
-              onChange={(e)=>setDemoUnlimited(e.target.checked)}
-            />
-            Unlimited Guest Joins
-          </label>
-
-          <label>
-            <input
-              type="checkbox"
-              checked={demoDuplicate}
-              onChange={(e)=>setDemoDuplicate(e.target.checked)}
-            />
-            Ignore Duplicate Protection
-          </label>
-
-          <label>
-            <input
-              type="checkbox"
-              checked={demoSms}
-              onChange={(e)=>setDemoSms(e.target.checked)}
-            />
-            Always Send SMS
-          </label>
-
-          <button
-            className="primary-button"
-            onClick={()=>
-              void saveDemoSettings(
-                demoPhone,
-                demoUnlimited,
-                demoDuplicate,
-                demoSms
-              )
-            }
-          >
-            Save Demo Settings
-          </button>
-
-        </section>
 
 </section>
         </main>
@@ -740,25 +684,9 @@ function GuestListPage() {
 
   useEffect(() => {
 
-    void api<any>("/api/demo-settings").then((r)=>{
-      if("error" in r) return;
-
-      setDemoPhone(r.data.test_phone ?? "");
-      setDemoUnlimited(!!r.data.unlimited_joins);
-      setDemoDuplicate(!!r.data.bypass_duplicates);
-      setDemoSms(!!r.data.always_send_sms);
-    });
 
 
 
-    void api<any>("/api/demo-settings").then((r)=>{
-      if("error" in r) return;
-
-      setDemoPhone(r.data.test_phone ?? "");
-      setDemoUnlimited(!!r.data.unlimited_joins);
-      setDemoDuplicate(!!r.data.bypass_duplicates);
-      setDemoSms(!!r.data.always_send_sms);
-    });
 
 
     void loadGuests();
@@ -1424,11 +1352,6 @@ function AdminPage() {
   const [demoSms,setDemoSms]=useState(true);
 
 
-  const [demoPhone,setDemoPhone]=useState("");
-  const [demoUnlimited,setDemoUnlimited]=useState(true);
-  const [demoDuplicate,setDemoDuplicate]=useState(true);
-  const [demoSms,setDemoSms]=useState(true);
-
   const [adminKey, setAdminKey] = useState(
     () => window.sessionStorage.getItem("guest-list-admin-key") ?? "",
   );
@@ -1487,6 +1410,15 @@ function AdminPage() {
   }, []);
 
   useEffect(() => {
+    void api<any>("/api/demo-settings").then((r)=>{
+      if("error" in r) return;
+
+      setDemoPhone(r.data.test_phone ?? "");
+      setDemoUnlimited(Boolean(r.data.unlimited_joins));
+      setDemoDuplicate(Boolean(r.data.bypass_duplicates));
+      setDemoSms(Boolean(r.data.always_send_sms));
+    });
+
     void api<any>("/api/analytics").then((result) => {
       if ("error" in result || !Array.isArray(result.data?.promoters)) {
         return;
@@ -1549,6 +1481,25 @@ function AdminPage() {
     );
   }
 
+  async function saveDemoSettings() {
+
+    await api("/api/demo-settings",{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json"
+      },
+      body:JSON.stringify({
+        test_phone:demoPhone,
+        unlimited_joins:demoUnlimited,
+        bypass_duplicates:demoDuplicate,
+        always_send_sms:demoSms
+      })
+    });
+
+    setMessage("Demo settings saved.");
+
+  }
+
   async function saveVenue(event: FormEvent) {
     event.preventDefault();
 
@@ -1603,6 +1554,70 @@ function AdminPage() {
             </p>
           </div>
         </div>
+
+
+
+        <section className="data-card">
+
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">Beta Testing</p>
+              <h2>Demo Settings</h2>
+            </div>
+          </div>
+
+          <div className="admin-form-grid">
+
+            <label>
+              Test Phone Number
+              <input
+                value={demoPhone}
+                onChange={(e)=>setDemoPhone(e.target.value)}
+              />
+            </label>
+
+            <label>
+              <input
+                type="checkbox"
+                checked={demoUnlimited}
+                onChange={(e)=>setDemoUnlimited(e.target.checked)}
+              />
+              Unlimited QR Joins
+            </label>
+
+            <label>
+              <input
+                type="checkbox"
+                checked={demoDuplicate}
+                onChange={(e)=>setDemoDuplicate(e.target.checked)}
+              />
+              Ignore Duplicate Protection
+            </label>
+
+            <label>
+              <input
+                type="checkbox"
+                checked={demoSms}
+                onChange={(e)=>setDemoSms(e.target.checked)}
+              />
+              Always Send SMS
+            </label>
+
+          </div>
+
+          <div className="admin-form-actions">
+
+            <button
+              type="button"
+              className="primary-button"
+              onClick={()=>void saveDemoSettings()}
+            >
+              Save Demo Settings
+            </button>
+
+          </div>
+
+        </section>
 
         <form
           className="data-card venue-editor-card"
@@ -1989,22 +2004,6 @@ function NotFoundPage() {
 }
 
 
-async function saveDemoSettings(
-  demoPhone:string,
-  demoUnlimited:boolean,
-  demoDuplicate:boolean,
-  demoSms:boolean
-){
-  await api("/api/demo-settings",{
-    method:"POST",
-    body:JSON.stringify({
-      test_phone:demoPhone,
-      unlimited_joins:demoUnlimited,
-      bypass_duplicates:demoDuplicate,
-      always_send_sms:demoSms
-    })
-  });
-}
 
 export default function App() {
 

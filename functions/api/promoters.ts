@@ -3,8 +3,8 @@ import { failure, readJson, success, type Env } from "../lib/api";
 async function resetExpiredPasses(env: Env): Promise<void> {
   await env.DB.prepare(`
     UPDATE promoters
-    SET pass_limit = CASE WHEN pass_limit < 1 THEN 10 ELSE pass_limit END,
-        reset_days = 1
+    SET pass_limit = CASE WHEN pass_limit < 1 THEN 25 ELSE pass_limit END,
+        reset_days = CASE WHEN reset_days < 1 THEN 1 ELSE reset_days END
   `).run();
 
   await env.DB.prepare(`
@@ -53,11 +53,11 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   if (
     !Number.isInteger(id) || id <= 0 ||
     !Number.isInteger(passLimit) || passLimit < 1 || passLimit > 100 ||
-    resetDays !== 1
+    !Number.isInteger(resetDays) || resetDays < 1 || resetDays > 30
   ) {
     return failure(
       "VALIDATION_ERROR",
-      "Promoters must have 1–100 passes and reset every 24 hours.",
+      "Promoters must have 1–100 passes and reset every 1–30 days.",
       400,
     );
   }
@@ -66,7 +66,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     const updated = await env.DB.prepare(`
       UPDATE promoters
       SET pass_limit = ?,
-          reset_days = 1,
+          reset_days = ?,
           passes_used = MIN(passes_used, ?),
           last_reset_at = COALESCE(last_reset_at, CURRENT_TIMESTAMP)
       WHERE id = ?
@@ -79,7 +79,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
         passes_used,
         MAX(pass_limit - passes_used, 0) AS passes_remaining,
         last_reset_at
-    `).bind(passLimit, passLimit, id).first();
+    `).bind(passLimit, resetDays, passLimit, id).first();
 
     if (!updated) {
       return failure("PROMOTER_NOT_FOUND", "Promoter not found.", 404);

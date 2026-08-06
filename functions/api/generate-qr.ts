@@ -6,6 +6,7 @@ interface PromoterPassRow {
   pass_limit: number;
   passes_used: number;
   passes_remaining: number;
+  reset_days: number;
 }
 
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
@@ -38,13 +39,14 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
         id,
         pass_limit,
         passes_used,
-        pass_limit - passes_used AS passes_remaining
+        pass_limit - passes_used AS passes_remaining,
+        reset_days
     `).bind(promoterId).first<PromoterPassRow>();
 
     if (!promoter) {
       return failure(
         "PASS_LIMIT_REACHED",
-        "No QR passes remain. Passes reset every 24 hours.",
+        "No QR passes remain. Passes reset after the configured interval.",
         409,
       );
     }
@@ -75,7 +77,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
       qrCode: qr.createDataURL(8, 16),
       passesRemaining: promoter.passes_remaining,
       passLimit: promoter.pass_limit,
-      resetsInHours: 24,
+      resetsInHours: promoter.reset_days * 24,
     });
   } catch (error) {
     console.error("generate-qr failed", error);

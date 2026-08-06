@@ -123,7 +123,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
         slug: promoter.slug,
         name: promoter.name,
         active: promoter.active === 1,
-        passLimit: promoter.pass_limit ?? 10,
+        passLimit: promoter.pass_limit ?? 25,
         resetDays: promoter.reset_days ?? 3,
         qrPath: `/p/${promoter.slug}`,
       })),

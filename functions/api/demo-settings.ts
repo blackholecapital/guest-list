@@ -1,4 +1,4 @@
-import { success, type Env } from "../lib/api";
+import { normalizePhone, success, type Env } from "../lib/api";
 
 export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
   const row = await env.DB
@@ -24,7 +24,7 @@ export const onRequestPost: PagesFunction<Env> = async ({
     WHERE id=1
   `)
   .bind(
-    body.test_phone,
+    normalizePhone(String(body.test_phone ?? "")),
     body.unlimited_joins ? 1 : 0,
     body.bypass_duplicates ? 1 : 0,
     body.always_send_sms ? 1 : 0

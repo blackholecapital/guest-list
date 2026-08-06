@@ -131,7 +131,7 @@ export const onRequestPost: PagesFunction<Env> = async ({
 
     const isTester =
       demo &&
-      body.phone === demo.test_phone;
+      body.phone === normalizePhone(String(demo.test_phone ?? ""));
 
     if (body.qrToken) {
       const qr = await env.DB
@@ -151,7 +151,7 @@ export const onRequestPost: PagesFunction<Env> = async ({
         );
       }
 
-      if (qr.used_at) {
+      if (qr.used_at && !(isTester && demo?.unlimited_joins)) {
         return failure(
           "USED_QR",
           "QR code already used.",
@@ -265,6 +265,13 @@ export const onRequestPost: PagesFunction<Env> = async ({
         "This phone number is already on tonight's guest list.",
         409,
       );
+    }
+
+    if (existingGuest && isTester && demo?.bypass_duplicates) {
+      await env.DB.prepare(`
+        DELETE FROM guests
+        WHERE id = ?
+      `).bind(existingGuest.id).run();
     }
 
     const result = await env.DB

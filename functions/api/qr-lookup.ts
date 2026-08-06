@@ -41,6 +41,12 @@ export const onRequestGet: PagesFunction<Env> = async ({
     );
   }
 
+  const demo = await env.DB.prepare(`
+    SELECT unlimited_joins
+    FROM demo_settings
+    WHERE id = 1
+  `).first<{ unlimited_joins: number }>();
+
   if (qr.expires_at && new Date(qr.expires_at).getTime() <= Date.now()) {
     return failure(
       "QR_EXPIRED",
@@ -49,7 +55,7 @@ export const onRequestGet: PagesFunction<Env> = async ({
     );
   }
 
-  if (qr.used_count >= qr.max_uses) {
+  if (qr.used_count >= qr.max_uses && !demo?.unlimited_joins) {
     return failure(
       "QR_LIMIT_REACHED",
       "This QR code has reached its limit.",
@@ -57,13 +63,15 @@ export const onRequestGet: PagesFunction<Env> = async ({
     );
   }
 
-  await env.DB.prepare(`
-    UPDATE qr_codes
-    SET used_count = used_count + 1
-    WHERE id = ?
-  `)
-  .bind(qr.id)
-  .run();
+  if (!demo?.unlimited_joins) {
+    await env.DB.prepare(`
+      UPDATE qr_codes
+      SET used_count = used_count + 1
+      WHERE id = ?
+    `)
+    .bind(qr.id)
+    .run();
+  }
 
   return success({
     token: qr.token,

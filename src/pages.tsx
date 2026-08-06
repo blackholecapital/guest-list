@@ -895,8 +895,8 @@ async function savePromoterSettings(promoter:any) {
     method: "POST",
     body: JSON.stringify({
       id: promoter.promoterId,
-      passLimit: Number(promoter.passLimit ?? 10),
-      resetDays: 1,
+      passLimit: Number(promoter.passLimit ?? 25),
+      resetDays: Number(promoter.resetDays ?? 1),
     }),
   });
 }
@@ -964,9 +964,9 @@ export function StatsPage() {
           notCheckedIn: Number(promoter.notCheckedIn ?? 0),
           redFlags: Number(promoter.notCheckedIn ?? 0),
           conversionPercentage: Number(promoter.conversionPercentage ?? 0),
-          passLimit: Number(settings?.pass_limit ?? 10),
-          passesRemaining: Number(settings?.passes_remaining ?? 10),
-          resetDays: 1,
+          passLimit: Number(settings?.pass_limit ?? 25),
+          passesRemaining: Number(settings?.passes_remaining ?? 25),
+          resetDays: Number(settings?.reset_days ?? 1),
           };
         }),
       };
@@ -1086,7 +1086,7 @@ export function StatsPage() {
                 <div className="promoter-pass-controls">
                 <select
                   aria-label={`${promoter.promoterName} daily pass limit`}
-                  value={(promoter as any).passLimit ?? 10}
+                  value={(promoter as any).passLimit ?? 25}
                   onChange={(event) => {
                     const value = Number(event.target.value);
                     setData((current) => ({
@@ -1107,10 +1107,25 @@ export function StatsPage() {
 
                 <select
                   aria-label={`${promoter.promoterName} reset interval`}
-                  value="1"
-                  disabled
+                  value={(promoter as any).resetDays ?? 1}
+                  onChange={(event) => {
+                    const value = Number(event.target.value);
+                    setData((current) => ({
+                      ...current,
+                      promoters: current.promoters.map((item: any) =>
+                        item.promoterSlug === promoter.promoterSlug
+                          ? { ...item, resetDays: value }
+                          : item,
+                      ),
+                    }));
+                    setSavedPromoterId(null);
+                  }}
                 >
                   <option value="1">Reset 1 day</option>
+                  <option value="3">Reset 3 days</option>
+                  <option value="7">Reset 7 days</option>
+                  <option value="14">Reset 14 days</option>
+                  <option value="30">Reset 30 days</option>
                 </select>
 
                 <button
@@ -1139,7 +1154,7 @@ export function StatsPage() {
 
                 <div className="promoter-stat-row promoter-passes-row">
                   <span>Passes available</span>
-                  <strong>{(promoter as any).passesRemaining ?? 10}</strong>
+                  <strong>{(promoter as any).passesRemaining ?? 25}</strong>
                 </div>
 
                 <div className="promoter-stat-row">
@@ -1231,9 +1246,9 @@ export function PromotersDashboardPage() {
                 notCheckedIn: Number(promoter.notCheckedIn ?? 0),
                 redFlags: Number(promoter.notCheckedIn ?? 0),
                 conversionPercentage: Number(promoter.conversionPercentage ?? 0),
-                passLimit: Number(settings?.pass_limit ?? 10),
-                passesRemaining: Number(settings?.passes_remaining ?? 10),
-                resetDays: 1,
+                passLimit: Number(settings?.pass_limit ?? 25),
+                passesRemaining: Number(settings?.passes_remaining ?? 25),
+                resetDays: Number(settings?.reset_days ?? 1),
                 };
               })
             : [],
@@ -1318,7 +1333,14 @@ export function PromotersDashboardPage() {
                 <div className="mini-stat-grid promoter-dashboard-stats">
                   <article>
                     <small>Passes Available</small>
-                    <strong>{(promoter as any).passesRemaining ?? 10}</strong>
+                    <strong>{(promoter as any).passesRemaining ?? 25}</strong>
+                  </article>
+                  <article>
+                    <small>Pass Reset</small>
+                    <strong>
+                      Every {(promoter as any).resetDays ?? 1}{" "}
+                      {(promoter as any).resetDays === 1 ? "day" : "days"}
+                    </strong>
                   </article>
                   <article>
                     <small>Registrations</small>
@@ -1940,9 +1962,9 @@ export function PromoterControlPage({ promoterSlug }: { promoterSlug: string }) 
             id: Number(found.id),
             name: String(found.name),
             slug: String(found.slug),
-            passLimit: Number(found.pass_limit ?? 10),
-            passesRemaining: Number(found.passes_remaining ?? 10),
-            resetDays: 1,
+            passLimit: Number(found.pass_limit ?? 25),
+            passesRemaining: Number(found.passes_remaining ?? 25),
+            resetDays: Number(found.reset_days ?? 1),
           });
         }
       }
@@ -1983,7 +2005,7 @@ export function PromoterControlPage({ promoterSlug }: { promoterSlug: string }) 
             Passes Remaining: {promoter?.passesRemaining ?? 0}
           </p>
           <p>
-            Reset: every 24 hours
+            Reset: every {promoter?.resetDays ?? 1} {promoter?.resetDays === 1 ? "day" : "days"}
           </p>
 
           <button

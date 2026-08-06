@@ -16,6 +16,11 @@
         "queue": "guest-followups",
         "binding": "guest_followups"
       }
+    ],
+    "consumers": [
+      {
+        "queue": "guest-followups"
+      }
     ]
   },
 

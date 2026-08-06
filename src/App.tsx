@@ -464,7 +464,64 @@ function PromoterPage({
             <p className="muted">
               Have your phone ready when you reach the door.
             </p>
-          </section>
+          
+
+        <section className="data-card">
+
+          <h2>Demo Testing</h2>
+
+          <label>
+            Test Phone
+            <input
+              value={demoPhone}
+              onChange={(e)=>setDemoPhone(e.target.value)}
+            />
+          </label>
+
+          <label>
+            <input
+              type="checkbox"
+              checked={demoUnlimited}
+              onChange={(e)=>setDemoUnlimited(e.target.checked)}
+            />
+            Unlimited Guest Joins
+          </label>
+
+          <label>
+            <input
+              type="checkbox"
+              checked={demoDuplicate}
+              onChange={(e)=>setDemoDuplicate(e.target.checked)}
+            />
+            Ignore Duplicate Protection
+          </label>
+
+          <label>
+            <input
+              type="checkbox"
+              checked={demoSms}
+              onChange={(e)=>setDemoSms(e.target.checked)}
+            />
+            Always Send SMS
+          </label>
+
+          <button
+            className="primary-button"
+            onClick={()=>
+              void saveDemoSettings(
+                demoPhone,
+                demoUnlimited,
+                demoDuplicate,
+                demoSms
+              )
+            }
+          >
+            Save Demo Settings
+          </button>
+
+        </section>
+
+</section>
         </main>
       </Shell>
     );
@@ -682,6 +739,28 @@ function GuestListPage() {
   }, []);
 
   useEffect(() => {
+
+    void api<any>("/api/demo-settings").then((r)=>{
+      if("error" in r) return;
+
+      setDemoPhone(r.data.test_phone ?? "");
+      setDemoUnlimited(!!r.data.unlimited_joins);
+      setDemoDuplicate(!!r.data.bypass_duplicates);
+      setDemoSms(!!r.data.always_send_sms);
+    });
+
+
+
+    void api<any>("/api/demo-settings").then((r)=>{
+      if("error" in r) return;
+
+      setDemoPhone(r.data.test_phone ?? "");
+      setDemoUnlimited(!!r.data.unlimited_joins);
+      setDemoDuplicate(!!r.data.bypass_duplicates);
+      setDemoSms(!!r.data.always_send_sms);
+    });
+
+
     void loadGuests();
     const timer = window.setInterval(() => {
       void loadGuests();
@@ -1338,6 +1417,18 @@ function PromotersDashboardPage() {
 }
 
 function AdminPage() {
+
+  const [demoPhone,setDemoPhone]=useState("");
+  const [demoUnlimited,setDemoUnlimited]=useState(true);
+  const [demoDuplicate,setDemoDuplicate]=useState(true);
+  const [demoSms,setDemoSms]=useState(true);
+
+
+  const [demoPhone,setDemoPhone]=useState("");
+  const [demoUnlimited,setDemoUnlimited]=useState(true);
+  const [demoDuplicate,setDemoDuplicate]=useState(true);
+  const [demoSms,setDemoSms]=useState(true);
+
   const [adminKey, setAdminKey] = useState(
     () => window.sessionStorage.getItem("guest-list-admin-key") ?? "",
   );
@@ -1897,7 +1988,26 @@ function NotFoundPage() {
   );
 }
 
+
+async function saveDemoSettings(
+  demoPhone:string,
+  demoUnlimited:boolean,
+  demoDuplicate:boolean,
+  demoSms:boolean
+){
+  await api("/api/demo-settings",{
+    method:"POST",
+    body:JSON.stringify({
+      test_phone:demoPhone,
+      unlimited_joins:demoUnlimited,
+      bypass_duplicates:demoDuplicate,
+      always_send_sms:demoSms
+    })
+  });
+}
+
 export default function App() {
+
   const path = window.location.pathname.replace(/\/+$/, "") || "/";
 
   if (path === "/") {

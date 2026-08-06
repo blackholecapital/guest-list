@@ -891,36 +891,30 @@ export function GuestListPage() {
 }
 
 async function savePromoterSettings(promoter:any) {
-  await api("/api/promoters", {
+  return api<any>("/api/promoters", {
     method: "POST",
     body: JSON.stringify({
       id: promoter.promoterId,
-      passLimit: Number(
-            promoter.passes_remaining ??
-            promoter.passLimit ??
-            promoter.pass_limit ??
-            0
-          ),
-          passesRemaining: Number(
-            promoter.passes_remaining ??
-            0
-          ),
-      resetDays: promoter.resetDays ?? 3,
+      passLimit: Number(promoter.passLimit ?? 10),
+      resetDays: 1,
     }),
   });
 }
 
 export function StatsPage() {
   const [data, setData] = useState(DEMO_STATS);
+  const [savingPromoterId, setSavingPromoterId] = useState<number | null>(null);
+  const [savedPromoterId, setSavedPromoterId] = useState<number | null>(null);
   const [notice, setNotice] = useState<string | null>(
     "Showing demo statistics until live data is available.",
   );
 
   const loadStats = useCallback(async () => {
     try {
-      const [statsResult, analyticsResult] = await Promise.all([
+      const [statsResult, analyticsResult, promotersResult] = await Promise.all([
         api<any>("/api/stats"),
         api<any>("/api/analytics"),
+        api<any>("/api/promoters"),
       ]);
 
       if ("error" in statsResult) {
@@ -934,6 +928,10 @@ export function StatsPage() {
         "error" in analyticsResult
           ? {}
           : analyticsResult.data;
+      const promoterSettings =
+        "error" in promotersResult || !Array.isArray(promotersResult.data?.promoters)
+          ? []
+          : promotersResult.data.promoters;
 
       if (!payload?.summary || !Array.isArray(payload?.promoters)) {
         setData(DEMO_STATS);
@@ -951,7 +949,12 @@ export function StatsPage() {
           qrGenerated: Number(analytics.qrGenerated ?? 0),
           qrScanned: Number(analytics.qrScanned ?? 0),
         },
-        promoters: payload.promoters.map((promoter: any) => ({
+        promoters: payload.promoters.map((promoter: any) => {
+          const settings = promoterSettings.find(
+            (item: any) => item.slug === promoter.promoterSlug,
+          );
+
+          return {
           promoterId: Number(promoter.promoterId ?? 0),
           promoterName: String(promoter.promoterName ?? "Promoter"),
           promoterSlug: String(promoter.promoterSlug ?? "promoter"),
@@ -961,9 +964,11 @@ export function StatsPage() {
           notCheckedIn: Number(promoter.notCheckedIn ?? 0),
           redFlags: Number(promoter.notCheckedIn ?? 0),
           conversionPercentage: Number(promoter.conversionPercentage ?? 0),
-          passLimit: Number(promoter.passes_remaining ?? promoter.passLimit ?? promoter.pass_limit ?? 0),
-          resetDays: Number(promoter.resetDays ?? promoter.reset_days ?? 3),
-        })),
+          passLimit: Number(settings?.pass_limit ?? 10),
+          passesRemaining: Number(settings?.passes_remaining ?? 10),
+          resetDays: 1,
+          };
+        }),
       };
 
       setData(liveStats);
@@ -1078,8 +1083,10 @@ export function StatsPage() {
               >
                 <strong>{promoter.promoterName}</strong>
 
+                <div className="promoter-pass-controls">
                 <select
-                  value={(promoter as any).passesRemaining ?? (promoter as any).passLimit ?? 0}
+                  aria-label={`${promoter.promoterName} daily pass limit`}
+                  value={(promoter as any).passLimit ?? 10}
                   onChange={(event) => {
                     const value = Number(event.target.value);
                     setData((current) => ({
@@ -1090,41 +1097,50 @@ export function StatsPage() {
                           : item,
                       ),
                     }));
-                    void savePromoterSettings({
-                      ...promoter,
-                      passLimit: value,
-                    });
+                    setSavedPromoterId(null);
                   }}
                 >
-                  <option value="0">0 passes</option>
                   <option value="10">10 passes</option>
                   <option value="25">25 passes</option>
                   <option value="50">50 passes</option>
                 </select>
 
                 <select
-                  value={(promoter as any).resetDays ?? 3}
-                  onChange={(event) => {
-                    const value = Number(event.target.value);
-                    setData((current) => ({
-                      ...current,
-                      promoters: current.promoters.map((item: any) =>
-                        item.promoterSlug === promoter.promoterSlug
-                          ? { ...item, resetDays: value }
-                          : item,
-                      ),
-                    }));
-                    void savePromoterSettings({
-                      ...promoter,
-                      resetDays: value,
+                  aria-label={`${promoter.promoterName} reset interval`}
+                  value="1"
+                  disabled
+                >
+                  <option value="1">Reset 1 day</option>
+                </select>
+
+                <button
+                  className="secondary-button compact-button promoter-save-button"
+                  type="button"
+                  disabled={savingPromoterId === promoter.promoterId}
+                  onClick={() => {
+                    setSavingPromoterId(promoter.promoterId);
+                    setSavedPromoterId(null);
+                    void savePromoterSettings(promoter).then((result) => {
+                      setSavingPromoterId(null);
+                      if (!("error" in result)) {
+                        setSavedPromoterId(promoter.promoterId);
+                        void loadStats();
+                      }
                     });
                   }}
                 >
-                  <option value="1">Reset 1 day</option>
-                  <option value="3">Reset 3 days</option>
-                  <option value="7">Reset 7 days</option>
-                  <option value="30">Reset 30 days</option>
-                </select>
+                  {savingPromoterId === promoter.promoterId
+                    ? "Saving..."
+                    : savedPromoterId === promoter.promoterId
+                      ? "Saved"
+                      : "Save"}
+                </button>
+                </div>
+
+                <div className="promoter-stat-row promoter-passes-row">
+                  <span>Passes available</span>
+                  <strong>{(promoter as any).passesRemaining ?? 10}</strong>
+                </div>
 
                 <div className="promoter-stat-row">
                   <span>Registrations</span>
@@ -1185,7 +1201,8 @@ export function PromotersDashboardPage() {
     void Promise.all([
       api<any>("/api/analytics"),
       api<any>("/api/guest-list"),
-    ]).then(([statsResult, guestResult]) => {
+      api<any>("/api/promoters"),
+    ]).then(([statsResult, guestResult, promotersResult]) => {
       if (!("error" in statsResult) && statsResult.data?.summary) {
         setData({
           summary: {
@@ -1196,7 +1213,15 @@ export function PromotersDashboardPage() {
             conversionPercentage: Number(statsResult.data.summary.conversionPercentage ?? 0),
           },
           promoters: Array.isArray(statsResult.data.promoters)
-            ? statsResult.data.promoters.map((promoter: any) => ({
+            ? statsResult.data.promoters.map((promoter: any) => {
+                const settings =
+                  "error" in promotersResult
+                    ? null
+                    : promotersResult.data?.promoters?.find(
+                        (item: any) => item.slug === promoter.promoterSlug,
+                      );
+
+                return {
                 promoterId: Number(promoter.promoterId ?? 0),
                 promoterName: String(promoter.promoterName ?? "Promoter"),
                 promoterSlug: String(promoter.promoterSlug ?? "promoter"),
@@ -1206,7 +1231,11 @@ export function PromotersDashboardPage() {
                 notCheckedIn: Number(promoter.notCheckedIn ?? 0),
                 redFlags: Number(promoter.notCheckedIn ?? 0),
                 conversionPercentage: Number(promoter.conversionPercentage ?? 0),
-              }))
+                passLimit: Number(settings?.pass_limit ?? 10),
+                passesRemaining: Number(settings?.passes_remaining ?? 10),
+                resetDays: 1,
+                };
+              })
             : [],
         });
         setNotice(null);
@@ -1287,6 +1316,10 @@ export function PromotersDashboardPage() {
                 </div>
 
                 <div className="mini-stat-grid promoter-dashboard-stats">
+                  <article>
+                    <small>Passes Available</small>
+                    <strong>{(promoter as any).passesRemaining ?? 10}</strong>
+                  </article>
                   <article>
                     <small>Registrations</small>
                     <strong>{promoter.registrations}</strong>
@@ -1896,7 +1929,7 @@ export function PromoterControlPage({ promoterSlug }: { promoterSlug: string }) 
   const [qrImage, setQrImage] = useState("");
 
   useEffect(() => {
-    void api<any>("/api/config").then((result) => {
+    void api<any>("/api/promoters").then((result) => {
       if (!("error" in result)) {
         const found = result.data?.promoters?.find(
           (p: any) => p.slug === promoterSlug,
@@ -1908,7 +1941,8 @@ export function PromoterControlPage({ promoterSlug }: { promoterSlug: string }) 
             name: String(found.name),
             slug: String(found.slug),
             passLimit: Number(found.pass_limit ?? 10),
-            resetDays: Number(found.reset_days ?? 3),
+            passesRemaining: Number(found.passes_remaining ?? 10),
+            resetDays: 1,
           });
         }
       }
@@ -1930,6 +1964,10 @@ export function PromoterControlPage({ promoterSlug }: { promoterSlug: string }) 
     if (!("error" in result)) {
       setQrUrl(result.data.url);
       setQrImage(result.data.qrCode);
+      setPromoter((current: any) => ({
+        ...current,
+        passesRemaining: Number(result.data.passesRemaining ?? 0),
+      }));
     }
   }
 
@@ -1942,15 +1980,15 @@ export function PromoterControlPage({ promoterSlug }: { promoterSlug: string }) 
           <h1>{promoter?.name ?? promoterSlug}</h1>
 
           <p>
-            Passes Remaining: {promoter?.passes_remaining ?? 0}
+            Passes Remaining: {promoter?.passesRemaining ?? 0}
           </p>
           <p>
-            Reset: {promoter?.reset_days ?? 0} days
+            Reset: every 24 hours
           </p>
 
           <button
             className="primary-button"
-            disabled={!promoter}
+            disabled={!promoter || promoter.passesRemaining <= 0}
             onClick={() => void generateQR()}
           >
             Generate QR Code

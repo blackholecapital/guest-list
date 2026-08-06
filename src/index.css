@@ -1225,6 +1225,23 @@ a.venue-detail:hover {
   font-size: 18px;
 }
 
+.promoter-pass-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.promoter-save-button {
+  min-height: 30px;
+  padding: 5px 12px;
+}
+
+.promoter-passes-row strong {
+  color: var(--gold);
+  font-size: 18px;
+}
+
 .promoter-stat-row {
   display: flex;
   justify-content: space-between;

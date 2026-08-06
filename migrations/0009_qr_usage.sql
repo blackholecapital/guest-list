@@ -1,2 +1,4 @@
-ALTER TABLE qr_codes ADD COLUMN used_at TEXT;
-ALTER TABLE guests ADD COLUMN qr_token TEXT;
+-- Production database already contains these columns.
+-- This migration intentionally does nothing.
+
+SELECT 1;

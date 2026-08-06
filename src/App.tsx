@@ -318,6 +318,37 @@ function Shell({
       </header>
 
       {children}
+
+      <footer
+        style={{
+          marginTop: 60,
+          padding: "30px 20px",
+          textAlign: "center",
+          borderTop: "1px solid #333",
+          color: "#999"
+        }}
+      >
+        <img
+          src="/assets/scores-logo.png"
+          alt="Scores Tampa"
+          style={{height:50,marginBottom:12}}
+        />
+
+        <div style={{marginBottom:10}}>
+          Scores Tampa<br/>
+          2310 N Dale Mabry Highway<br/>
+          Tampa, FL 33607<br/>
+          (813) 875-7912
+        </div>
+
+        <div>
+          <a href="/privacy.html">Privacy Policy</a>
+          {" | "}
+          <a href="/terms.html">Terms & Conditions</a>
+        </div>
+
+      </footer>
+
     </div>
   );
 }

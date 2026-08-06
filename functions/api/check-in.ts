@@ -123,6 +123,16 @@ export const onRequestPost: PagesFunction<Env> = async ({
   }
 
   try {
+    const demo = await env.DB.prepare(`
+      SELECT *
+      FROM demo_settings
+      WHERE id=1
+    `).first<any>();
+
+    const isTester =
+      demo &&
+      body.phone === demo.test_phone;
+
     if (body.qrToken) {
       const qr = await env.DB
         .prepare(`
@@ -246,7 +256,10 @@ export const onRequestPost: PagesFunction<Env> = async ({
       )
       .first<{ id: number }>();
 
-    if (existingGuest) {
+    if (
+      existingGuest &&
+      !(isTester && demo?.bypass_duplicates)
+    ) {
       return failure(
         "ALREADY_REGISTERED",
         "This phone number is already on tonight's guest list.",

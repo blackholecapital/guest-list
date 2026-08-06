@@ -2,24 +2,11 @@ import VipPackages from "./VipPackages";
 import { promoterColor } from "./promoter-theme";
 import Shell from "./components/Shell";
 import StatCard from "./components/StatCard";
+import { api } from "./api/client";
+import { formatDateTime } from "./utils/dates";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
-
-type ApiSuccess<T> = {
-  ok: true;
-  data: T;
-};
-
-type ApiFailure = {
-  ok: false;
-  error: {
-    code: string;
-    message: string;
-  };
-};
-
-type ApiResponse<T> = ApiSuccess<T> | ApiFailure;
 
 const VENUE = {
   name: "Scores Tampa",
@@ -251,43 +238,7 @@ const DEMO_STATS = {
   ],
 };
 
-function formatDateTime(value: string) {
-  return new Date(value).toLocaleString("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
-
-async function api<T>(
-  url: string,
-  init?: RequestInit,
-): Promise<ApiResponse<T>> {
-  const response = await fetch(url, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(init?.headers ?? {}),
-    },
-    ...init,
-  });
-
-  const body = await response.json() as ApiResponse<T>;
-
-  if (!response.ok && body.ok) {
-    return {
-      ok: false,
-      error: {
-        code: "REQUEST_FAILED",
-        message: "Request failed.",
-      },
-    };
-  }
-
-  return body;
-}
-
- function PromoterPage({
+function PromoterPage({
   promoterSlug,
   qrToken,
 }: {

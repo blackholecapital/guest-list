@@ -3,8 +3,6 @@ import Shell from "../components/Shell";
 import { api } from "../api/client";
 import { formatDateTime } from "../utils/dates";
 
-// TODO: import DemoGuest and DEMO_GUESTS from shared model after extraction.
-
 export default function GuestListPage() {
   const [guests, setGuests] = useState<DemoGuest[]>(DEMO_GUESTS);
   const [notice, setNotice] = useState<string | null>(

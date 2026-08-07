@@ -50,7 +50,7 @@ export const onRequestGet: PagesFunction<Env> = async ({
   if (qr.expires_at && new Date(qr.expires_at).getTime() <= Date.now()) {
     return failure(
       "QR_EXPIRED",
-      "This QR code has expired.",
+      "This pass has expired.",
       410,
     );
   }

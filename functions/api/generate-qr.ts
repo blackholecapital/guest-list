@@ -10,11 +10,38 @@ interface PromoterPassRow {
 }
 
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
-  const body = await request.json() as { promoterId?: number };
+  const body = await request.json() as {
+    promoterId?: number;
+    expiresAt?: string;
+    maxUses?: number;
+  };
   const promoterId = Number(body.promoterId);
+  const maxUses = body.maxUses === undefined ? 1 : Number(body.maxUses);
+  const requestedExpiration = body.expiresAt
+    ? new Date(body.expiresAt)
+    : new Date(Date.now() + 24 * 60 * 60 * 1000);
 
   if (!Number.isInteger(promoterId) || promoterId <= 0) {
     return failure("BAD_REQUEST", "Missing promoterId.", 400);
+  }
+
+  if (!Number.isInteger(maxUses) || maxUses < 1 || maxUses > 10000) {
+    return failure("BAD_REQUEST", "maxUses must be between 1 and 10,000.", 400);
+  }
+
+  const expiresAt = requestedExpiration.getTime();
+  const maximumExpiration = Date.now() + 366 * 24 * 60 * 60 * 1000;
+
+  if (
+    !Number.isFinite(expiresAt) ||
+    expiresAt <= Date.now() ||
+    expiresAt > maximumExpiration
+  ) {
+    return failure(
+      "BAD_REQUEST",
+      "Choose an expiration within the next 366 days.",
+      400,
+    );
   }
 
   try {
@@ -56,8 +83,13 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     try {
       await env.DB.prepare(`
         INSERT INTO qr_codes (promoter_id, token, max_uses, expires_at)
-        VALUES (?, ?, 1, datetime('now', '+1 day'))
-      `).bind(promoterId, token).run();
+        VALUES (?, ?, ?, ?)
+      `).bind(
+        promoterId,
+        token,
+        maxUses,
+        requestedExpiration.toISOString(),
+      ).run();
     } catch (error) {
       await env.DB.prepare(`
         UPDATE promoters
@@ -78,6 +110,8 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
       passesRemaining: promoter.passes_remaining,
       passLimit: promoter.pass_limit,
       resetsInHours: promoter.reset_days * 24,
+      expiresAt: requestedExpiration.toISOString(),
+      maxUses,
     });
   } catch (error) {
     console.error("generate-qr failed", error);

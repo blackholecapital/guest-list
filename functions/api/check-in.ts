@@ -136,7 +136,7 @@ export const onRequestPost: PagesFunction<Env> = async ({
     if (body.qrToken) {
       const qr = await env.DB
         .prepare(`
-          SELECT id, used_at
+          SELECT id, expires_at
           FROM qr_codes
           WHERE token = ?
         `)
@@ -151,11 +151,14 @@ export const onRequestPost: PagesFunction<Env> = async ({
         );
       }
 
-      if (qr.used_at && !(isTester && demo?.unlimited_joins)) {
+      if (
+        qr.expires_at &&
+        new Date(qr.expires_at).getTime() <= Date.now()
+      ) {
         return failure(
-          "USED_QR",
-          "QR code already used.",
-          409,
+          "QR_EXPIRED",
+          "This pass has expired.",
+          410,
         );
       }
     }

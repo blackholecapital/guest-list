@@ -1,5 +1,12 @@
 import VipPackages from "./VipPackages";
 import { promoterColor } from "./promoter-theme";
+import {
+  DEMO_ACCOUNTS,
+  getDemoSession,
+  landingPath,
+  loginDemoAccount,
+  logoutDemoAccount,
+} from "./auth";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
@@ -258,6 +265,13 @@ function formatDateTime(value: string) {
   });
 }
 
+function dateInputValue(daysFromToday: number) {
+  const date = new Date();
+  date.setDate(date.getDate() + daysFromToday);
+  const offset = date.getTimezoneOffset() * 60 * 1000;
+  return new Date(date.getTime() - offset).toISOString().slice(0, 10);
+}
+
 async function api<T>(
   url: string,
   init?: RequestInit,
@@ -292,6 +306,8 @@ function Shell({
   children: React.ReactNode;
   compact?: boolean;
 }) {
+  const session = getDemoSession();
+
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -307,12 +323,24 @@ function Shell({
           </span>
         </a>
 
-        {!compact && (
+        {!compact && session && (
           <nav>
-            <a href="/guest-list">Guest List</a>
-            <a href="/stats">Stats</a>
-            <a href="/promoters">Promoters</a>
-            <a href="/admin">Admin</a>
+            {(session.role === "door" || session.role === "admin") && (
+              <a href="/guest-list">Guest List</a>
+            )}
+            {session.role === "admin" && <a href="/stats">Stats</a>}
+            {session.role === "admin" && <a href="/promoters">Promoters</a>}
+            {session.role === "promoter" && (
+              <a href={`/promoter/${session.promoterSlug}`}>My QR Codes</a>
+            )}
+            {session.role === "admin" && <a href="/admin">Admin</a>}
+            <button
+              className="nav-logout"
+              type="button"
+              onClick={logoutDemoAccount}
+            >
+              Log Out
+            </button>
           </nav>
         )}
       </header>
@@ -350,6 +378,80 @@ function Shell({
       </footer>
 
     </div>
+  );
+}
+
+export function LoginPage() {
+  const existingSession = getDemoSession();
+  const [username, setUsername] = useState(DEMO_ACCOUNTS[0].username);
+  const [password, setPassword] = useState("");
+  const [message, setMessage] = useState("");
+
+  function handleLogin(event: FormEvent) {
+    event.preventDefault();
+    setMessage("");
+
+    const session = loginDemoAccount(username, password);
+    if (!session) {
+      setMessage("The selected user and password do not match.");
+      return;
+    }
+
+    window.location.assign(landingPath(session));
+  }
+
+  if (existingSession) {
+    window.location.replace(landingPath(existingSession));
+    return null;
+  }
+
+  return (
+    <Shell compact>
+      <main className="page narrow centered login-page">
+        <section className="hero-card login-card">
+          <p className="eyebrow">Demo access</p>
+          <h1>Sign In</h1>
+          <p className="muted">Choose your assigned role to continue.</p>
+
+          <form className="guest-form" onSubmit={handleLogin}>
+            <label>
+              User
+              <select
+                value={username}
+                onChange={(event) => {
+                  setUsername(event.target.value as typeof username);
+                  setPassword("");
+                  setMessage("");
+                }}
+              >
+                {DEMO_ACCOUNTS.map((account) => (
+                  <option key={account.username} value={account.username}>
+                    {account.username}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              Password
+              <input
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                required
+              />
+            </label>
+
+            <button className="primary-button full" type="submit">
+              Sign In
+            </button>
+
+            {message && <div className="error-box">{message}</div>}
+          </form>
+        </section>
+      </main>
+    </Shell>
   );
 }
 
@@ -1439,6 +1541,15 @@ export function AdminPage() {
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
   const [promoterStats, setPromoterStats] = useState(DEMO_STATS.promoters);
+  const [eventPromoterId, setEventPromoterId] = useState("1");
+  const [eventExpiresOn, setEventExpiresOn] = useState(() => dateInputValue(14));
+  const [eventQr, setEventQr] = useState<{
+    url: string;
+    qrCode: string;
+    expiresAt: string;
+  } | null>(null);
+  const [eventQrMessage, setEventQrMessage] = useState("");
+  const [generatingEventQr, setGeneratingEventQr] = useState(false);
 
   const [venue, setVenue] = useState({
     name: VENUE.name,
@@ -1579,6 +1690,44 @@ export function AdminPage() {
 
   }
 
+  async function generateEventQR(event: FormEvent) {
+    event.preventDefault();
+    setGeneratingEventQr(true);
+    setEventQr(null);
+    setEventQrMessage("");
+
+    const expiration = new Date(`${eventExpiresOn}T23:59:59`);
+
+    try {
+      const result = await api<any>("/api/generate-qr", {
+        method: "POST",
+        body: JSON.stringify({
+          promoterId: Number(eventPromoterId),
+          expiresAt: expiration.toISOString(),
+          maxUses: 10000,
+        }),
+      });
+
+      if ("error" in result) {
+        setEventQrMessage(result.error.message);
+        return;
+      }
+
+      setEventQr({
+        url: String(result.data.url),
+        qrCode: String(result.data.qrCode),
+        expiresAt: String(result.data.expiresAt),
+      });
+      setEventQrMessage(
+        `Event QR created. It expires after ${eventExpiresOn}.`,
+      );
+    } catch {
+      setEventQrMessage("The event QR code could not be generated.");
+    } finally {
+      setGeneratingEventQr(false);
+    }
+  }
+
   async function saveVenue(event: FormEvent) {
     event.preventDefault();
 
@@ -1634,7 +1783,86 @@ export function AdminPage() {
           </div>
         </div>
 
+        <form className="data-card event-qr-card" onSubmit={generateEventQR}>
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">Special event flyers</p>
+              <h2>Expiring QR Code</h2>
+              <p className="muted">
+                Create one reusable flyer code that stops accepting guests after
+                the selected date.
+              </p>
+            </div>
+          </div>
 
+          <div className="admin-form-grid">
+            <label>
+              Promoter color
+              <select
+                value={eventPromoterId}
+                onChange={(event) => setEventPromoterId(event.target.value)}
+              >
+                {VENUE.promoters.map((promoter) => (
+                  <option key={promoter.id} value={promoter.id}>
+                    {promoter.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              Valid through
+              <input
+                type="date"
+                min={dateInputValue(0)}
+                max={dateInputValue(365)}
+                value={eventExpiresOn}
+                onChange={(event) => setEventExpiresOn(event.target.value)}
+                required
+              />
+            </label>
+          </div>
+
+          <div className="admin-form-actions">
+            <button
+              className="primary-button"
+              type="submit"
+              disabled={generatingEventQr}
+            >
+              {generatingEventQr ? "Generating..." : "Generate Event QR"}
+            </button>
+          </div>
+
+          {eventQrMessage && (
+            <div className={eventQr ? "success-box" : "error-box"}>
+              {eventQrMessage}
+            </div>
+          )}
+
+          {eventQr && (
+            <div className="event-qr-result">
+              <div
+                className="event-qr-frame"
+                style={{
+                  borderColor: promoterColor(
+                    VENUE.promoters.find(
+                      (promoter) => promoter.id === Number(eventPromoterId),
+                    )?.slug ?? "",
+                  ),
+                }}
+              >
+                <img src={eventQr.qrCode} alt="Expiring event QR code" />
+              </div>
+              <div>
+                <strong>Flyer link</strong>
+                <p className="event-qr-url">{eventQr.url}</p>
+                <small>
+                  Expires {new Date(eventQr.expiresAt).toLocaleString()}
+                </small>
+              </div>
+            </div>
+          )}
+        </form>
 
         <section className="data-card">
 
@@ -2046,14 +2274,34 @@ export function PromoterControlPage({ promoterSlug }: { promoterSlug: string }) 
 
 export function JoinTokenPage({ token }: { token: string }) {
   const [data, setData] = useState<any>(null);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     void api<any>(`/api/qr-lookup?token=${token}`).then((r) => {
-      if (!("error" in r)) {
-        setData(r.data);
+      if ("error" in r) {
+        setError(r.error.message);
+        return;
       }
+
+      setData(r.data);
     });
   }, [token]);
+
+  if (error) {
+    return (
+      <Shell compact>
+        <main className="page narrow centered">
+          <section className="hero-card expired-pass-card">
+            <p className="eyebrow">Guest pass unavailable</p>
+            <h1>{error}</h1>
+            <p className="muted">
+              Contact your promoter for a current guest-list pass.
+            </p>
+          </section>
+        </main>
+      </Shell>
+    );
+  }
 
   if (!data) {
     return (

@@ -2,18 +2,46 @@ import {
   AdminPage,
   GuestListPage,
   JoinTokenPage,
+  LoginPage,
   NotFoundPage,
   PromoterControlPage,
   PromoterPage,
   PromotersDashboardPage,
   StatsPage,
 } from "./pages";
+import {
+  canAccessInternalPath,
+  getDemoSession,
+  landingPath,
+} from "./auth";
 
 export default function App() {
   const path = window.location.pathname.replace(/\/+$/, "") || "/";
 
+  if (path === "/login") {
+    return <LoginPage />;
+  }
+
+  const isPublicGuestPath = path.startsWith("/join/") || path.startsWith("/p/");
+  const session = getDemoSession();
+
+  if (!isPublicGuestPath && !session) {
+    window.location.replace("/login");
+    return null;
+  }
+
+  if (session && path === "/") {
+    window.location.replace(landingPath(session));
+    return null;
+  }
+
+  if (session && !canAccessInternalPath(session, path)) {
+    window.location.replace(landingPath(session));
+    return null;
+  }
+
   if (path === "/") {
-    return <StatsPage />;
+    return null;
   }
 
   if (path === "/guest-list") {

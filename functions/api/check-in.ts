@@ -313,7 +313,7 @@ export const onRequestPost: PagesFunction<Env> = async ({
       .run();
 
     if (
-      (body.smsOptIn || SMS_TESTERS.has(body.phone)) &&
+      (body.smsOptIn || demo?.always_send_sms) &&
       env.guest_followups
     ) {
       try {
@@ -321,6 +321,7 @@ export const onRequestPost: PagesFunction<Env> = async ({
           phone: body.phone,
           name: body.name,
           smsOptIn: true,
+          messageBody: `You're confirmed on the Scores Tampa guest list through ${promoter.name}.`,
         });
       } catch (queueError) {
         console.error("SMS follow-up enqueue failed", queueError);

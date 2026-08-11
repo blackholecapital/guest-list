@@ -22,6 +22,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
       JOIN promoters p ON p.id = g.promoter_id
       WHERE g.submitted_latitude IS NOT NULL
         AND g.submitted_longitude IS NOT NULL
+        AND g.location_exception = 0
       ORDER BY g.created_at DESC
       LIMIT 5000
     `).all<any>();

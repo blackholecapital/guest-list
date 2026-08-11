@@ -14,6 +14,9 @@ interface GuestRow {
   status: string;
   created_at: string;
   checked_in_at: string | null;
+  location_exception: number;
+  exception_reason: string | null;
+  confirmation_code: string | null;
 }
 
 export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
@@ -30,6 +33,9 @@ export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
           g.status,
           g.created_at,
           g.checked_in_at
+          , g.location_exception
+          , g.exception_reason
+          , g.confirmation_code
         FROM guests g
         JOIN promoters p ON p.id = g.promoter_id
         JOIN venues v ON v.id = g.venue_id

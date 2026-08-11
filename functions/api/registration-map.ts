@@ -17,13 +17,32 @@ export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
         g.created_at,
         g.status,
         p.name AS promoter_name,
-        p.slug AS promoter_slug
+        p.slug AS promoter_slug,
+        'guest' AS location_source
       FROM guests g
       JOIN promoters p ON p.id = g.promoter_id
       WHERE g.submitted_latitude IS NOT NULL
         AND g.submitted_longitude IS NOT NULL
         AND g.location_exception = 0
-      ORDER BY g.created_at DESC
+      UNION ALL
+      SELECT
+        g.id,
+        a.latitude,
+        a.longitude,
+        g.created_at,
+        g.status,
+        p.name AS promoter_name,
+        p.slug AS promoter_slug,
+        'promoter_qr_fallback' AS location_source
+      FROM guests g
+      JOIN promoters p ON p.id = g.promoter_id
+      JOIN qr_codes q ON q.token = g.qr_token
+      JOIN promoter_qr_generation_attempts a ON a.qr_code_id = q.id
+      WHERE g.location_exception = 1
+        AND a.outcome = 'generated'
+        AND a.latitude IS NOT NULL
+        AND a.longitude IS NOT NULL
+      ORDER BY 4 DESC
       LIMIT 5000
     `).all<any>();
 
@@ -45,6 +64,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
         promoterSlug: String(row.promoter_slug ?? "promoter"),
         status: String(row.status ?? "registered"),
         registeredAt: String(row.created_at),
+        locationSource: String(row.location_source ?? "guest"),
       };
     });
 

@@ -360,6 +360,78 @@ nav a:hover {
   vertical-align: 0.05em;
 }
 
+.promoter-location-disclosure {
+  max-width: 620px;
+  margin-top: 14px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.promoter-geofence-warning {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+  padding: 18px;
+  border: 2px solid #e31d3b;
+  border-radius: 14px;
+  background: rgba(227, 29, 59, 0.14);
+  color: #ffb8c3;
+}
+
+.promoter-geofence-warning strong {
+  color: #ff334f;
+  font-size: 18px;
+}
+
+.promoter-geofence-audit {
+  margin-top: 20px;
+}
+
+.geofence-alert-count {
+  padding: 8px 12px;
+  border: 1px solid rgba(227, 29, 59, 0.55);
+  border-radius: 999px;
+  color: #ff8ea0;
+  font-weight: 800;
+}
+
+.geofence-audit-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.geofence-audit-list article {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.8fr) minmax(240px, 1.6fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 13px 15px;
+  border: 1px solid rgba(227, 29, 59, 0.35);
+  border-radius: 12px;
+  background: rgba(227, 29, 59, 0.08);
+}
+
+.geofence-audit-list article strong {
+  color: #ff6f85;
+}
+
+.geofence-audit-list article small {
+  color: var(--muted);
+  text-align: right;
+}
+
+@media (max-width: 760px) {
+  .geofence-audit-list article {
+    grid-template-columns: 1fr;
+  }
+
+  .geofence-audit-list article small {
+    text-align: left;
+  }
+}
+
 
 .signup-page {
   max-width: 1080px;

@@ -1014,6 +1014,152 @@ async function savePromoterSettings(promoter:any) {
   });
 }
 
+let leafletLoader: Promise<any> | null = null;
+
+function loadLeaflet(): Promise<any> {
+  const existing = (window as any).L;
+  if (existing) return Promise.resolve(existing);
+  if (leafletLoader) return leafletLoader;
+
+  leafletLoader = new Promise((resolve, reject) => {
+    if (!document.querySelector('link[data-leaflet-css]')) {
+      const stylesheet = document.createElement("link");
+      stylesheet.rel = "stylesheet";
+      stylesheet.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+      stylesheet.dataset.leafletCss = "true";
+      document.head.appendChild(stylesheet);
+    }
+
+    const present = document.querySelector<HTMLScriptElement>('script[data-leaflet-js]');
+    if (present) {
+      present.addEventListener("load", () => resolve((window as any).L), { once: true });
+      present.addEventListener("error", reject, { once: true });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+    script.dataset.leafletJs = "true";
+    script.onload = () => resolve((window as any).L);
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+
+  return leafletLoader;
+}
+
+function RegistrationMap({ promoters }: { promoters: any[] }) {
+  const mapElementId = "registration-coverage-map";
+  const [mapData, setMapData] = useState<any>(null);
+  const [mapMessage, setMapMessage] = useState("Loading registration map...");
+
+  useEffect(() => {
+    let cancelled = false;
+    let map: any = null;
+
+    void Promise.all([api<any>("/api/registration-map"), loadLeaflet()])
+      .then(([result, L]) => {
+        if (cancelled) return;
+        if ("error" in result) {
+          setMapMessage(result.error.message);
+          return;
+        }
+
+        const payload = result.data;
+        setMapData(payload);
+        setMapMessage("");
+        const element = document.getElementById(mapElementId);
+        if (!element) return;
+
+        map = L.map(element, { scrollWheelZoom: false, minZoom: 7, maxZoom: 18 });
+        const bounds = payload.bounds;
+        map.fitBounds([
+          [bounds.south, bounds.west],
+          [bounds.north, bounds.east],
+        ]);
+
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+          maxZoom: 19,
+        }).addTo(map);
+
+        for (const point of payload.points.filter((item: any) => item.onMap)) {
+          const marker = L.circleMarker([point.latitude, point.longitude], {
+            radius: 7,
+            color: "#ffffff",
+            weight: 1,
+            fillColor: promoterColor(point.promoterSlug),
+            fillOpacity: 0.9,
+          }).addTo(map);
+          marker.bindTooltip(
+            `${point.promoterName}<br>${new Date(point.registeredAt).toLocaleString()}<br>${point.status === "checked_in" ? "Checked in" : "Registered"}`,
+          );
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setMapMessage("The map could not be loaded.");
+      });
+
+    return () => {
+      cancelled = true;
+      if (map) map.remove();
+    };
+  }, []);
+
+  return (
+    <section className="data-card registration-map-card">
+      <div className="section-heading registration-map-heading">
+        <div>
+          <p className="eyebrow">Geographic performance</p>
+          <h2>Tampa Bay Registration Map</h2>
+          <p className="muted">
+            Registration locations across Tampa, Clearwater, St. Petersburg, New Tampa,
+            Wesley Chapel, Zephyrhills, and surrounding areas.
+          </p>
+        </div>
+        <div className="map-counts">
+          <span><strong>{mapData?.onMapCount ?? 0}</strong> on map</span>
+          <span><strong>{mapData?.offMapCount ?? 0}</strong> off map</span>
+        </div>
+      </div>
+
+      <div className="registration-map-layout">
+        <div className="registration-map-wrap">
+          <div id={mapElementId} className="registration-map" />
+          {mapMessage && <div className="map-loading">{mapMessage}</div>}
+        </div>
+
+        <aside className="registration-map-sidebar">
+          <h3>Promoters</h3>
+          <div className="map-legend">
+            {promoters.map((promoter) => (
+              <div key={promoter.promoterSlug}>
+                <span style={{ background: promoterColor(promoter.promoterSlug) }} />
+                {promoter.promoterName}
+              </div>
+            ))}
+          </div>
+
+          <h3>Off-map registrations</h3>
+          {mapData?.offMapByPromoter?.length ? (
+            <div className="off-map-list">
+              {mapData.offMapByPromoter.map((item: any) => (
+                <div key={item.slug}>
+                  <span style={{ background: promoterColor(item.slug) }} />
+                  <strong>{item.name}</strong>
+                  <b>{item.count}</b>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="muted">No registrations outside the Tampa Bay map.</p>
+          )}
+        </aside>
+      </div>
+    </section>
+  );
+}
+
 export function StatsPage() {
   const [data, setData] = useState(DEMO_STATS);
   const [savingPromoterId, setSavingPromoterId] = useState<number | null>(null);
@@ -1171,6 +1317,8 @@ export function StatsPage() {
             value={`${data.summary.conversionPercentage}%`}
           />
         </section>
+
+        <RegistrationMap promoters={data.promoters} />
 
         <section className="data-card promoter-performance-card">
           <div className="section-heading">

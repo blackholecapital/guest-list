@@ -1254,7 +1254,11 @@ function RegistrationMap({ promoters }: { promoters: any[] }) {
             fillOpacity: 0.9,
           }).addTo(map);
           marker.bindTooltip(
-            `${point.promoterName}<br>${new Date(point.registeredAt).toLocaleString()}<br>${point.status === "checked_in" ? "Checked in" : "Registered"}`,
+            `${point.promoterName}<br>${new Date(point.registeredAt).toLocaleString()}<br>${
+              point.locationSource === "promoter_qr_fallback"
+                ? "Promoter QR location (guest fallback)"
+                : point.status === "checked_in" ? "Checked in" : "Registered"
+            }`,
           );
         }
       })
@@ -1324,6 +1328,7 @@ function RegistrationMap({ promoters }: { promoters: any[] }) {
 
 export function StatsPage() {
   const [data, setData] = useState(DEMO_STATS);
+  const [promoterGeofenceAttempts, setPromoterGeofenceAttempts] = useState<any[]>([]);
   const [savingPromoterId, setSavingPromoterId] = useState<number | null>(null);
   const [savedPromoterId, setSavedPromoterId] = useState<number | null>(null);
   const [notice, setNotice] = useState<string | null>(
@@ -1393,6 +1398,11 @@ export function StatsPage() {
       };
 
       setData(liveStats);
+      setPromoterGeofenceAttempts(
+        Array.isArray(payload.promoterGeofenceAttempts)
+          ? payload.promoterGeofenceAttempts
+          : [],
+      );
       setNotice(null);
     } catch {
       setData(DEMO_STATS);
@@ -1481,6 +1491,40 @@ export function StatsPage() {
         </section>
 
         <RegistrationMap promoters={data.promoters} />
+
+        <section className="data-card promoter-geofence-audit">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">Promoter geofence audit</p>
+              <h2>Blocked QR Generation Attempts</h2>
+              <p className="muted">
+                Promoters cannot generate guest passes inside the venue geofence.
+                Location failures are also logged for review.
+              </p>
+            </div>
+            <span className="geofence-alert-count">
+              {promoterGeofenceAttempts.length} recent alerts
+            </span>
+          </div>
+
+          {promoterGeofenceAttempts.length ? (
+            <div className="geofence-audit-list">
+              {promoterGeofenceAttempts.map((attempt: any) => (
+                <article key={attempt.id}>
+                  <strong>⚑ {attempt.promoter_name}</strong>
+                  <span>
+                    {attempt.outcome === "blocked_inside_geofence"
+                      ? `Blocked inside geofence · ${Math.round(Number(attempt.distance_meters ?? 0))} m from venue`
+                      : "Location unavailable while attempting QR generation"}
+                  </span>
+                  <small>{new Date(attempt.created_at).toLocaleString()}</small>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p className="muted">No promoter geofence violations recorded.</p>
+          )}
+        </section>
 
         <section className="data-card promoter-performance-card">
           <div className="section-heading">
@@ -2687,6 +2731,8 @@ export function PromoterControlPage({ promoterSlug }: { promoterSlug: string }) 
   const [promoter, setPromoter] = useState<any>(null);
   const [qrUrl, setQrUrl] = useState("");
   const [qrImage, setQrImage] = useState("");
+  const [qrMessage, setQrMessage] = useState("");
+  const [generatingQr, setGeneratingQr] = useState(false);
 
   useEffect(() => {
     void api<any>("/api/promoters").then((result) => {
@@ -2714,21 +2760,60 @@ export function PromoterControlPage({ promoterSlug }: { promoterSlug: string }) 
       return;
     }
 
-    const result = await api<any>("/api/generate-qr", {
-      method: "POST",
-      body: JSON.stringify({
-        promoterId: promoter.id,
-      }),
-    });
+    setQrMessage("");
+    setQrUrl("");
+    setQrImage("");
+    setGeneratingQr(true);
 
-    if (!("error" in result)) {
-      setQrUrl(result.data.url);
-      setQrImage(result.data.qrCode);
-      setPromoter((current: any) => ({
-        ...current,
-        passesRemaining: Number(result.data.passesRemaining ?? 0),
-      }));
+    const submitAttempt = async (location: Record<string, unknown>) =>
+      api<any>("/api/generate-qr", {
+        method: "POST",
+        body: JSON.stringify({ promoterId: promoter.id, ...location }),
+      });
+
+    let result: any;
+    try {
+      if (!navigator.geolocation) {
+        result = await submitAttempt({ locationStatus: "unsupported" });
+      } else {
+        result = await new Promise<any>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              void submitAttempt({
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+                accuracyMeters: position.coords.accuracy,
+                locationStatus: "captured",
+              }).then(resolve, reject);
+            },
+            (error) => {
+              void submitAttempt({
+                locationStatus: error.code === 1 ? "permission_denied" : "location_error",
+              }).then(resolve, reject);
+            },
+            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+          );
+        });
+      }
+    } catch {
+      setGeneratingQr(false);
+      setQrMessage("Location verification failed. No QR pass was used. Try again.");
+      return;
     }
+
+    setGeneratingQr(false);
+
+    if ("error" in result) {
+      setQrMessage(result.error.message);
+      return;
+    }
+
+    setQrUrl(result.data.url);
+    setQrImage(result.data.qrCode);
+    setPromoter((current: any) => ({
+      ...current,
+      passesRemaining: Number(result.data.passesRemaining ?? 0),
+    }));
   }
 
   return (
@@ -2748,11 +2833,23 @@ export function PromoterControlPage({ promoterSlug }: { promoterSlug: string }) 
 
           <button
             className="primary-button"
-            disabled={!promoter || promoter.passesRemaining <= 0}
+            disabled={!promoter || promoter.passesRemaining <= 0 || generatingQr}
             onClick={() => void generateQR()}
           >
-            Generate QR Code
+            {generatingQr ? "Checking Location..." : "Generate QR Code"}
           </button>
+
+          <p className="promoter-location-disclosure">
+            Location Services are required. QR generation is blocked inside the
+            venue geofence and every blocked attempt is reported to Admin.
+          </p>
+
+          {qrMessage && (
+            <div className="promoter-geofence-warning">
+              <strong>⚑ QR GENERATION BLOCKED</strong>
+              <span>{qrMessage}</span>
+            </div>
+          )}
 
           {qrUrl && (
             <div>

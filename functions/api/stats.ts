@@ -51,6 +51,25 @@ export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
       `)
       .all<PromoterRow>();
 
+    const promoterGeofenceAttempts = await env.DB.prepare(`
+      SELECT
+        a.id,
+        a.latitude,
+        a.longitude,
+        a.accuracy_meters,
+        a.distance_meters,
+        a.location_status,
+        a.outcome,
+        a.created_at,
+        p.name AS promoter_name,
+        p.slug AS promoter_slug
+      FROM promoter_qr_generation_attempts a
+      JOIN promoters p ON p.id = a.promoter_id
+      WHERE a.outcome IN ('blocked_inside_geofence', 'location_unavailable')
+      ORDER BY a.created_at DESC
+      LIMIT 50
+    `).all<any>();
+
     const totalRegistrations = summary?.total_registrations ?? 0;
     const checkedIn = summary?.checked_in ?? 0;
 
@@ -78,6 +97,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
             ? Number(((row.checked_in / row.registrations) * 100).toFixed(1))
             : 0,
       })),
+      promoterGeofenceAttempts: promoterGeofenceAttempts.results ?? [],
     });
   } catch (error) {
     console.error("stats failed", error);

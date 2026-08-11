@@ -40,7 +40,7 @@ export default {
           body: new URLSearchParams({
             From: env.TWILIO_FROM_NUMBER,
             To: guest.phone,
-            Body:
+            Body: guest.messageBody ??
               "You're confirmed on the Scores Tampa guest list.",
           }),
         },

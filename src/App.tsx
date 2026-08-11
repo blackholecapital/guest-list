@@ -3,6 +3,7 @@ import {
   GuestListPage,
   JoinTokenPage,
   LoginPage,
+  LocationHelpPage,
   NotFoundPage,
   PromoterControlPage,
   PromoterPage,
@@ -22,7 +23,8 @@ export default function App() {
     return <LoginPage />;
   }
 
-  const isPublicGuestPath = path.startsWith("/join/") || path.startsWith("/p/");
+  const isPublicGuestPath =
+    path.startsWith("/join/") || path.startsWith("/p/") || path === "/location-help";
   const session = getDemoSession();
 
   if (!isPublicGuestPath && !session) {
@@ -58,6 +60,10 @@ export default function App() {
 
   if (path === "/admin") {
     return <AdminPage />;
+  }
+
+  if (path === "/location-help") {
+    return <LocationHelpPage />;
   }
 
   if (path.startsWith("/promoter/")) {

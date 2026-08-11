@@ -57,6 +57,8 @@ type DemoGuest = {
   status: "checked_in" | "pending" | "flagged";
   checkedInAt: string | null;
   flagReason: string | null;
+  locationException?: boolean;
+  confirmationCode?: string | null;
 };
 
 const MAPS_URL = `https://maps.google.com/?q=${encodeURIComponent(VENUE.address)}`;
@@ -472,6 +474,9 @@ export function PromoterPage({
     "idle" | "locating" | "submitting" | "success" | "error"
   >("idle");
   const [message, setMessage] = useState("");
+  const helpUrl = `/location-help?promoter=${encodeURIComponent(promoterSlug)}${
+    qrToken ? `&token=${encodeURIComponent(qrToken)}` : ""
+  }`;
 
   useEffect(() => {
     void api<any>("/api/promoters").then((result) => {
@@ -639,9 +644,15 @@ export function PromoterPage({
 
               <div className="location-note">
                 <span aria-hidden="true">⌖</span>
-                <p>
-                  Location is used to enforce the venue registration rules.
-                </p>
+                <div>
+                  <p>Location is used to enforce the venue registration rules.</p>
+                  <p>
+                    Your phone's Location Services must be enabled to use this function.
+                  </p>
+                  <a className="location-help-link" href={helpUrl}>
+                    Having location problems? Click here.
+                  </a>
+                </div>
               </div>
 
               <label className="checkbox-row sms-opt-in">
@@ -736,6 +747,129 @@ export function PromoterPage({
   );
 }
 
+export function LocationHelpPage() {
+  const params = new URLSearchParams(window.location.search);
+  const promoterSlug = params.get("promoter")?.trim().toLowerCase() ?? "";
+  const qrToken = params.get("token")?.trim() ?? "";
+  const [promoterName, setPromoterName] = useState(promoterSlug || "your promoter");
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [smsOptIn, setSmsOptIn] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [confirmation, setConfirmation] = useState<any>(null);
+
+  useEffect(() => {
+    if (!promoterSlug) return;
+    void api<any>("/api/promoters").then((result) => {
+      if ("error" in result || !Array.isArray(result.data?.promoters)) return;
+      const promoter = result.data.promoters.find(
+        (item: any) => item.slug === promoterSlug,
+      );
+      if (promoter?.name) setPromoterName(String(promoter.name));
+    });
+  }, [promoterSlug]);
+
+  async function submitLocationHelp(event: FormEvent) {
+    event.preventDefault();
+    setError("");
+    setSubmitting(true);
+
+    try {
+      const result = await api<any>("/api/location-help", {
+        method: "POST",
+        body: JSON.stringify({ promoterSlug, qrToken, name, phone, smsOptIn }),
+      });
+      if ("error" in result) {
+        setError(result.error.message);
+        return;
+      }
+      setConfirmation(result.data);
+    } catch {
+      setError("Location assistance could not add you right now.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  if (confirmation) {
+    return (
+      <Shell compact>
+        <main className="page narrow centered">
+          <section className="hero-card success-card location-help-confirmation">
+            <div className="success-icon">✓</div>
+            <p className="eyebrow">Location assistance confirmed</p>
+            <h1>You're still on the list.</h1>
+            <div className="confirmation-code">{confirmation.confirmationCode}</div>
+            <p>{confirmation.confirmationText}</p>
+            <p className="muted">
+              Show this screen or the confirmation text to the door staff.
+            </p>
+          </section>
+        </main>
+      </Shell>
+    );
+  }
+
+  return (
+    <Shell compact>
+      <main className="page narrow centered location-help-page">
+        <section className="hero-card location-help-card">
+          <p className="eyebrow">Guest list assistance</p>
+          <h1>Having location trouble?</h1>
+          <p>
+            Sorry you're having issues with Location Services. During beta testing,
+            we can still place you on the list through <strong>{promoterName}</strong>.
+          </p>
+
+          <div className="notice-box">
+            This creates a location-service exception for door staff. It does not
+            count as a verified geographic registration.
+          </div>
+
+          <form className="guest-form" onSubmit={submitLocationHelp}>
+            <label>
+              Full name
+              <input
+                type="text"
+                autoComplete="name"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                required
+              />
+            </label>
+            <label>
+              Phone number
+              <input
+                type="tel"
+                autoComplete="tel"
+                value={phone}
+                onChange={(event) => setPhone(event.target.value)}
+                required
+              />
+            </label>
+            <label className="checkbox-row sms-opt-in">
+              <input
+                type="checkbox"
+                checked={smsOptIn}
+                onChange={(event) => setSmsOptIn(event.target.checked)}
+              />
+              <span>
+                Text me the location-help confirmation to show at the door.
+                Message/data rates may apply.
+              </span>
+            </label>
+            <button className="primary-button full" disabled={submitting}>
+              {submitting ? "Adding you..." : "Join With Location Help"}
+            </button>
+            {error && <div className="error-box">{error}</div>}
+          </form>
+        </section>
+      </main>
+    </Shell>
+  );
+}
+
 export function GuestListPage() {
   const [guests, setGuests] = useState<DemoGuest[]>(DEMO_GUESTS);
   const [notice, setNotice] = useState<string | null>(
@@ -790,7 +924,9 @@ export function GuestListPage() {
               ? "flagged"
               : "pending",
         checkedInAt: guest.checkedInAt ?? guest.checked_in_at ?? null,
-        flagReason: guest.flagReason ?? null,
+        flagReason: guest.flagReason ?? guest.exception_reason ?? null,
+        locationException: Boolean(guest.location_exception),
+        confirmationCode: guest.confirmation_code ?? null,
       }));
 
       setGuests(mapped);
@@ -973,6 +1109,14 @@ export function GuestListPage() {
 
               {guest.flagReason && (
                 <div className="flag-note">{guest.flagReason}</div>
+              )}
+
+              {guest.locationException && (
+                <div className="location-exception-note">
+                  <strong>Location-service exception</strong>
+                  <span>{guest.confirmationCode}</span>
+                  <small>Verify the guest's confirmation text at the door.</small>
+                </div>
               )}
 
               <div className="guest-card-actions">

@@ -287,6 +287,70 @@ nav a:hover {
   line-height: 1.5;
 }
 
+.location-note > div {
+  min-width: 0;
+}
+
+.location-note p + p {
+  margin-top: 5px;
+  font-weight: 700;
+}
+
+.location-help-link {
+  display: inline-block;
+  margin-top: 9px;
+  color: var(--gold);
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.location-help-card .guest-form {
+  margin-top: 24px;
+}
+
+.location-help-card h1 {
+  font-size: clamp(38px, 7vw, 58px);
+}
+
+.location-help-confirmation {
+  text-align: center;
+}
+
+.confirmation-code {
+  margin: 24px 0;
+  padding: 16px;
+  border: 2px solid var(--gold);
+  border-radius: 14px;
+  background: rgba(214, 174, 88, 0.1);
+  color: var(--gold);
+  font-size: clamp(28px, 7vw, 44px);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.location-exception-note {
+  display: grid;
+  gap: 4px;
+  margin-top: 12px;
+  padding: 11px 13px;
+  border: 1px solid rgba(214, 174, 88, 0.5);
+  border-radius: 12px;
+  background: rgba(214, 174, 88, 0.1);
+  color: #f2d99f;
+}
+
+.location-exception-note span {
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+}
+
+.location-exception-note small {
+  color: #d7c9a9;
+}
+
 
 .signup-page {
   max-width: 1080px;

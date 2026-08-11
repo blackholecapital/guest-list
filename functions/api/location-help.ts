@@ -76,10 +76,6 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     if (existing && demo.bypass_duplicates !== 1) {
       return failure("ALREADY_REGISTERED", "This phone number is already on tonight's list.", 409);
     }
-    if (existing) {
-      await env.DB.prepare("DELETE FROM guests WHERE id = ?").bind(existing.id).run();
-    }
-
     const confirmationCode = `LOC-${crypto.randomUUID().slice(0, 6).toUpperCase()}`;
     const result = await env.DB.prepare(`
       INSERT INTO guests (

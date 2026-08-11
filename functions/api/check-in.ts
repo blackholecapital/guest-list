@@ -271,13 +271,6 @@ export const onRequestPost: PagesFunction<Env> = async ({
       );
     }
 
-    if (existingGuest && isTester && demo?.bypass_duplicates) {
-      await env.DB.prepare(`
-        DELETE FROM guests
-        WHERE id = ?
-      `).bind(existingGuest.id).run();
-    }
-
     const result = await env.DB
       .prepare(`
         INSERT INTO guests (

@@ -1,5 +1,5 @@
 import qrcode from "qrcode-generator";
-import { failure, success, type Env } from "../lib/api";
+import { failure, haversineMeters, success, type Env } from "../lib/api";
 
 interface PromoterPassRow {
   id: number;
@@ -16,11 +16,21 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     maxUses?: number;
     eventName?: string;
     isSpecialEvent?: boolean;
+    latitude?: number;
+    longitude?: number;
+    accuracyMeters?: number;
+    locationStatus?: string;
   };
   const promoterId = Number(body.promoterId);
   const maxUses = body.maxUses === undefined ? 1 : Number(body.maxUses);
   const eventName = typeof body.eventName === "string" ? body.eventName.trim() : "";
   const isSpecialEvent = body.isSpecialEvent === true;
+  const latitude = Number(body.latitude);
+  const longitude = Number(body.longitude);
+  const accuracyMeters = Number(body.accuracyMeters);
+  const locationStatus = typeof body.locationStatus === "string"
+    ? body.locationStatus.slice(0, 40)
+    : "captured";
   const requestedExpiration = body.expiresAt
     ? new Date(body.expiresAt)
     : new Date(Date.now() + 24 * 60 * 60 * 1000);
@@ -53,6 +63,75 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   }
 
   try {
+    const promoterVenue = await env.DB.prepare(`
+      SELECT
+        p.id,
+        v.latitude,
+        v.longitude,
+        v.radius_meters,
+        v.geofence_enabled
+      FROM promoters p
+      JOIN venues v ON v.id = p.venue_id
+      WHERE p.id = ? AND p.active = 1
+      LIMIT 1
+    `).bind(promoterId).first<any>();
+
+    if (!promoterVenue) {
+      return failure("PROMOTER_NOT_FOUND", "This promoter is not active.", 404);
+    }
+
+    let generationDistance: number | null = null;
+    if (!isSpecialEvent) {
+      const hasLocation =
+        Number.isFinite(latitude) && latitude >= -90 && latitude <= 90 &&
+        Number.isFinite(longitude) && longitude >= -180 && longitude <= 180;
+
+      if (!hasLocation) {
+        await env.DB.prepare(`
+          INSERT INTO promoter_qr_generation_attempts (
+            promoter_id, location_status, outcome
+          ) VALUES (?, ?, 'location_unavailable')
+        `).bind(promoterId, locationStatus).run();
+
+        return failure(
+          "PROMOTER_LOCATION_REQUIRED",
+          "Location Services must be enabled before a promoter can generate a QR code. This attempt was logged.",
+          403,
+        );
+      }
+
+      generationDistance = haversineMeters(
+        latitude,
+        longitude,
+        Number(promoterVenue.latitude),
+        Number(promoterVenue.longitude),
+      );
+
+      if (
+        Number(promoterVenue.geofence_enabled) === 1 &&
+        generationDistance < Number(promoterVenue.radius_meters)
+      ) {
+        await env.DB.prepare(`
+          INSERT INTO promoter_qr_generation_attempts (
+            promoter_id, latitude, longitude, accuracy_meters,
+            distance_meters, location_status, outcome
+          ) VALUES (?, ?, ?, ?, ?, 'captured', 'blocked_inside_geofence')
+        `).bind(
+          promoterId,
+          latitude,
+          longitude,
+          Number.isFinite(accuracyMeters) ? accuracyMeters : null,
+          generationDistance,
+        ).run();
+
+        return failure(
+          "PROMOTER_INSIDE_GEOFENCE",
+          "QR generation is blocked near the venue. This geofence attempt was flagged for the administrator.",
+          403,
+        );
+      }
+    }
+
     await env.DB.prepare(`
       UPDATE promoters
       SET passes_used = 0,
@@ -89,7 +168,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     const token = crypto.randomUUID();
 
     try {
-      await env.DB.prepare(`
+      const insertResult = await env.DB.prepare(`
         INSERT INTO qr_codes (
           promoter_id, token, max_uses, expires_at, event_name, is_special_event
         )
@@ -102,6 +181,22 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
         isSpecialEvent ? eventName : null,
         isSpecialEvent ? 1 : 0,
       ).run();
+
+      if (!isSpecialEvent) {
+        await env.DB.prepare(`
+          INSERT INTO promoter_qr_generation_attempts (
+            promoter_id, qr_code_id, latitude, longitude, accuracy_meters,
+            distance_meters, location_status, outcome
+          ) VALUES (?, ?, ?, ?, ?, ?, 'captured', 'generated')
+        `).bind(
+          promoterId,
+          insertResult.meta.last_row_id,
+          latitude,
+          longitude,
+          Number.isFinite(accuracyMeters) ? accuracyMeters : null,
+          generationDistance,
+        ).run();
+      }
     } catch (error) {
       await env.DB.prepare(`
         UPDATE promoters

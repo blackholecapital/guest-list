@@ -957,13 +957,20 @@ export function GuestListPage() {
       all: guests.length,
       checked_in: guests.filter((guest) => guest.status === "checked_in").length,
       pending: guests.filter((guest) => guest.status === "pending").length,
-      flagged: guests.filter((guest) => guest.status === "flagged").length,
+      flagged: guests.filter(
+        (guest) => guest.status === "flagged" || guest.locationException,
+      ).length,
     };
   }, [guests]);
 
   const filteredGuests = useMemo(() => {
     return guests.filter((guest) => {
-      const matchesFilter = filter === "all" ? true : guest.status === filter;
+      const matchesFilter =
+        filter === "all"
+          ? true
+          : filter === "flagged"
+            ? guest.status === "flagged" || guest.locationException
+            : guest.status === filter;
       const haystack =
         `${guest.name} ${guest.phone} ${guest.promoterName}`.toLowerCase();
       const matchesSearch = haystack.includes(search.trim().toLowerCase());
@@ -1066,7 +1073,18 @@ export function GuestListPage() {
             >
               <div className="guest-card-top">
                 <div>
-                  <strong>{guest.name}</strong>
+                  <strong>
+                    {guest.name}
+                    {guest.locationException && (
+                      <span
+                        className="location-exception-flag"
+                        title="Location-service exception — verify confirmation text"
+                        aria-label="Location-service exception"
+                      >
+                        ⚑
+                      </span>
+                    )}
+                  </strong>
                   <span>{guest.phone}</span>
                 </div>
 

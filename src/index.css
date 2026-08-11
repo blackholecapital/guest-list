@@ -351,6 +351,15 @@ nav a:hover {
   color: #d7c9a9;
 }
 
+.location-exception-flag {
+  display: inline-block;
+  margin-left: 0.45rem;
+  color: #ff334f;
+  font-size: 1rem;
+  line-height: 1;
+  vertical-align: 0.05em;
+}
+
 
 .signup-page {
   max-width: 1080px;

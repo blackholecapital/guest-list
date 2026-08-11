@@ -139,6 +139,7 @@ export const onRequestPost: PagesFunction<Env> = async ({
           SELECT id, expires_at
           FROM qr_codes
           WHERE token = ?
+            AND deleted_at IS NULL
         `)
         .bind(body.qrToken)
         .first<any>();

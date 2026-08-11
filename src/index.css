@@ -1518,6 +1518,93 @@ header nav,
   color: var(--gold);
 }
 
+.special-events-card {
+  padding: 26px;
+  margin-bottom: 18px;
+}
+
+.special-event-list {
+  display: grid;
+  gap: 18px;
+}
+
+.special-event-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 22px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: #0c0c0c;
+}
+
+.special-event-details {
+  min-width: 0;
+}
+
+.special-event-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.special-event-heading h3 {
+  margin: 2px 0 4px;
+  font-size: 23px;
+}
+
+.special-event-funnel {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.special-event-funnel article {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #141414;
+}
+
+.special-event-funnel small,
+.special-event-funnel strong {
+  display: block;
+}
+
+.special-event-funnel small {
+  min-height: 32px;
+  color: var(--muted);
+}
+
+.special-event-funnel strong {
+  margin-top: 6px;
+  color: white;
+  font-size: 20px;
+}
+
+.danger-button {
+  border: 1px solid #7b3030;
+  background: #2a1111;
+  color: #ffaaaa;
+}
+
+@media (max-width: 800px) {
+  .special-event-item {
+    grid-template-columns: 1fr;
+  }
+
+  .special-event-item .event-qr-frame {
+    width: fit-content;
+  }
+
+  .special-event-funnel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 .expired-pass-card {
   text-align: center;
 }

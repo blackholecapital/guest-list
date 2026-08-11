@@ -1556,7 +1556,10 @@ export function AdminPage() {
   const [savedPromoterId, setSavedPromoterId] = useState<number | null>(null);
   const [promoterMessage, setPromoterMessage] = useState("");
   const [eventPromoterId, setEventPromoterId] = useState("1");
+  const [eventName, setEventName] = useState("");
   const [eventExpiresOn, setEventExpiresOn] = useState(() => dateInputValue(14));
+  const [specialEvents, setSpecialEvents] = useState<any[]>([]);
+  const [deletingEventId, setDeletingEventId] = useState<number | null>(null);
   const [eventQr, setEventQr] = useState<{
     url: string;
     qrCode: string;
@@ -1564,6 +1567,13 @@ export function AdminPage() {
   } | null>(null);
   const [eventQrMessage, setEventQrMessage] = useState("");
   const [generatingEventQr, setGeneratingEventQr] = useState(false);
+
+  const loadSpecialEvents = useCallback(async () => {
+    const result = await api<any>("/api/event-qrs");
+    if (!("error" in result) && Array.isArray(result.data?.events)) {
+      setSpecialEvents(result.data.events);
+    }
+  }, []);
 
   const [venue, setVenue] = useState({
     name: VENUE.name,
@@ -1614,6 +1624,8 @@ export function AdminPage() {
   }, []);
 
   useEffect(() => {
+    void loadSpecialEvents();
+
     void api<any>("/api/demo-settings").then((r)=>{
       if("error" in r) return;
 
@@ -1658,7 +1670,7 @@ export function AdminPage() {
         }),
       );
     });
-  }, []);
+  }, [loadSpecialEvents]);
 
   function updateVenue(
     field: keyof typeof venue,
@@ -1735,6 +1747,8 @@ export function AdminPage() {
           promoterId: Number(eventPromoterId),
           expiresAt: expiration.toISOString(),
           maxUses: 10000,
+          eventName: eventName.trim(),
+          isSpecialEvent: true,
         }),
       });
 
@@ -1751,11 +1765,35 @@ export function AdminPage() {
       setEventQrMessage(
         `Event QR created. It expires after ${eventExpiresOn}.`,
       );
+      setEventName("");
+      await loadSpecialEvents();
     } catch {
       setEventQrMessage("The event QR code could not be generated.");
     } finally {
       setGeneratingEventQr(false);
     }
+  }
+
+  async function deleteSpecialEvent(id: number, name: string) {
+    if (!window.confirm(`Delete ${name}? Its QR code will stop working.`)) {
+      return;
+    }
+
+    setDeletingEventId(id);
+    const result = await api<any>("/api/event-qrs", {
+      method: "DELETE",
+      body: JSON.stringify({ id }),
+    });
+    setDeletingEventId(null);
+
+    if ("error" in result) {
+      setEventQrMessage(result.error.message);
+      return;
+    }
+
+    setEventQr(null);
+    setEventQrMessage(`${name} deleted.`);
+    await loadSpecialEvents();
   }
 
   async function saveVenue(event: FormEvent) {
@@ -1826,6 +1864,18 @@ export function AdminPage() {
           </div>
 
           <div className="admin-form-grid">
+            <label className="full-field">
+              Event name
+              <input
+                type="text"
+                maxLength={100}
+                placeholder="Example: Labor Day Weekend"
+                value={eventName}
+                onChange={(event) => setEventName(event.target.value)}
+                required
+              />
+            </label>
+
             <label>
               Promoter color
               <select
@@ -1893,6 +1943,70 @@ export function AdminPage() {
             </div>
           )}
         </form>
+
+        <section className="data-card special-events-card">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">Persistent event assets</p>
+              <h2>Special Event Flyers & Conversions</h2>
+              <p className="muted">
+                Saved flyers remain here until deleted. Scans and guest conversions update from live D1 data.
+              </p>
+            </div>
+          </div>
+
+          {specialEvents.length === 0 ? (
+            <div className="notice-box">No saved special-event flyers yet.</div>
+          ) : (
+            <div className="special-event-list">
+              {specialEvents.map((event) => (
+                <article className="special-event-item" key={event.id}>
+                  <div
+                    className="event-qr-frame"
+                    style={{ borderColor: promoterColor(event.promoterSlug) }}
+                  >
+                    <img src={event.qrCode} alt={`${event.name} QR code`} />
+                  </div>
+
+                  <div className="special-event-details">
+                    <div className="special-event-heading">
+                      <div>
+                        <p className="eyebrow">{event.promoterName}</p>
+                        <h3>{event.name}</h3>
+                        <small>
+                          Expires {event.expiresAt ? new Date(event.expiresAt).toLocaleString() : "never"}
+                        </small>
+                      </div>
+                      <button
+                        className="danger-button compact-button"
+                        type="button"
+                        disabled={deletingEventId === event.id}
+                        onClick={() => void deleteSpecialEvent(event.id, event.name)}
+                      >
+                        {deletingEventId === event.id ? "Deleting..." : "Delete"}
+                      </button>
+                    </div>
+
+                    <a className="event-qr-url" href={event.url} target="_blank" rel="noreferrer">
+                      {event.url}
+                    </a>
+
+                    <div className="special-event-funnel">
+                      <article><small>QR Generated</small><strong>1</strong></article>
+                      <article><small>Scanned</small><strong>{event.scans}</strong></article>
+                      <article><small>Registered</small><strong>{event.registrations}</strong></article>
+                      <article><small>Total Guests</small><strong>{event.totalGuests}</strong></article>
+                      <article><small>Checked In</small><strong>{event.checkedIn}</strong></article>
+                      <article><small>Awaiting Check-In</small><strong>{event.awaitingCheckIn}</strong></article>
+                      <article><small>Scan → Register</small><strong>{event.registrationConversion}%</strong></article>
+                      <article><small>Register → Check In</small><strong>{event.checkInConversion}%</strong></article>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
 
         <section className="data-card">
 

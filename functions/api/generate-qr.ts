@@ -14,9 +14,13 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     promoterId?: number;
     expiresAt?: string;
     maxUses?: number;
+    eventName?: string;
+    isSpecialEvent?: boolean;
   };
   const promoterId = Number(body.promoterId);
   const maxUses = body.maxUses === undefined ? 1 : Number(body.maxUses);
+  const eventName = typeof body.eventName === "string" ? body.eventName.trim() : "";
+  const isSpecialEvent = body.isSpecialEvent === true;
   const requestedExpiration = body.expiresAt
     ? new Date(body.expiresAt)
     : new Date(Date.now() + 24 * 60 * 60 * 1000);
@@ -27,6 +31,10 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
 
   if (!Number.isInteger(maxUses) || maxUses < 1 || maxUses > 10000) {
     return failure("BAD_REQUEST", "maxUses must be between 1 and 10,000.", 400);
+  }
+
+  if (isSpecialEvent && (eventName.length < 1 || eventName.length > 100)) {
+    return failure("BAD_REQUEST", "Event names must be 1–100 characters.", 400);
   }
 
   const expiresAt = requestedExpiration.getTime();
@@ -82,13 +90,17 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
 
     try {
       await env.DB.prepare(`
-        INSERT INTO qr_codes (promoter_id, token, max_uses, expires_at)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO qr_codes (
+          promoter_id, token, max_uses, expires_at, event_name, is_special_event
+        )
+        VALUES (?, ?, ?, ?, ?, ?)
       `).bind(
         promoterId,
         token,
         maxUses,
         requestedExpiration.toISOString(),
+        isSpecialEvent ? eventName : null,
+        isSpecialEvent ? 1 : 0,
       ).run();
     } catch (error) {
       await env.DB.prepare(`
@@ -112,6 +124,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
       resetsInHours: promoter.reset_days * 24,
       expiresAt: requestedExpiration.toISOString(),
       maxUses,
+      eventName: isSpecialEvent ? eventName : null,
     });
   } catch (error) {
     console.error("generate-qr failed", error);

@@ -29,6 +29,7 @@ export const onRequestGet: PagesFunction<Env> = async ({
     JOIN promoters p
       ON p.id = q.promoter_id
     WHERE q.token = ?
+      AND q.deleted_at IS NULL
   `)
   .bind(token)
   .first<any>();
@@ -63,15 +64,13 @@ export const onRequestGet: PagesFunction<Env> = async ({
     );
   }
 
-  if (!demo?.unlimited_joins) {
-    await env.DB.prepare(`
-      UPDATE qr_codes
-      SET used_count = used_count + 1
-      WHERE id = ?
-    `)
-    .bind(qr.id)
-    .run();
-  }
+  await env.DB.prepare(`
+    UPDATE qr_codes
+    SET used_count = used_count + 1
+    WHERE id = ?
+  `)
+  .bind(qr.id)
+  .run();
 
   return success({
     token: qr.token,

@@ -997,6 +997,7 @@ async function savePromoterSettings(promoter:any) {
     method: "POST",
     body: JSON.stringify({
       id: promoter.promoterId,
+      name: String(promoter.promoterName ?? "").trim(),
       passLimit: Number(promoter.passLimit ?? 25),
       resetDays: Number(promoter.resetDays ?? 1),
     }),
@@ -1541,6 +1542,9 @@ export function AdminPage() {
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
   const [promoterStats, setPromoterStats] = useState(DEMO_STATS.promoters);
+  const [savingPromoterId, setSavingPromoterId] = useState<number | null>(null);
+  const [savedPromoterId, setSavedPromoterId] = useState<number | null>(null);
+  const [promoterMessage, setPromoterMessage] = useState("");
   const [eventPromoterId, setEventPromoterId] = useState("1");
   const [eventExpiresOn, setEventExpiresOn] = useState(() => dateInputValue(14));
   const [eventQr, setEventQr] = useState<{
@@ -1609,15 +1613,28 @@ export function AdminPage() {
       setDemoSms(Boolean(r.data.always_send_sms));
     });
 
-    void api<any>("/api/analytics").then((result) => {
+    void Promise.all([
+      api<any>("/api/analytics"),
+      api<any>("/api/promoters"),
+    ]).then(([result, promotersResult]) => {
       if ("error" in result || !Array.isArray(result.data?.promoters)) {
         return;
       }
 
+      const promoterSettings =
+        "error" in promotersResult || !Array.isArray(promotersResult.data?.promoters)
+          ? []
+          : promotersResult.data.promoters;
+
       setPromoterStats(
-        result.data.promoters.map((promoter: any) => ({
+        result.data.promoters.map((promoter: any) => {
+          const settings = promoterSettings.find(
+            (item: any) => item.slug === promoter.promoterSlug,
+          );
+
+          return {
           promoterId: Number(promoter.promoterId ?? 0),
-          promoterName: String(promoter.promoterName ?? "Promoter"),
+          promoterName: String(settings?.name ?? promoter.promoterName ?? "Promoter"),
           promoterSlug: String(promoter.promoterSlug ?? "promoter"),
           registrations: Number(promoter.registrations ?? 0),
           totalPartySize: Number(promoter.totalPartySize ?? 0),
@@ -1625,7 +1642,10 @@ export function AdminPage() {
           notCheckedIn: Number(promoter.notCheckedIn ?? 0),
           redFlags: Number(promoter.notCheckedIn ?? 0),
           conversionPercentage: Number(promoter.conversionPercentage ?? 0),
-        })),
+          passLimit: Number(settings?.pass_limit ?? 25),
+          resetDays: Number(settings?.reset_days ?? 1),
+          };
+        }),
       );
     });
   }, []);
@@ -2137,7 +2157,8 @@ export function AdminPage() {
           <div className="section-heading admin-promoter-heading">
             <div>
               <p className="eyebrow">Promoter overview</p>
-              <h2>Tonight at a Glance</h2>
+              <h2>Promoter Management</h2>
+              <p className="muted">Change a promoter's display name without changing their QR link.</p>
             </div>
             <a className="secondary-button compact-button" href="/promoters">
               Open Promoter Dashboard
@@ -2151,7 +2172,61 @@ export function AdminPage() {
                 key={promoter.promoterSlug}
                 style={{ borderColor: promoterColor(promoter.promoterSlug) }}
               >
-                <strong>{promoter.promoterName}</strong>
+                <label className="promoter-name-field">
+                  Display name
+                  <input
+                    type="text"
+                    maxLength={80}
+                    value={promoter.promoterName}
+                    onChange={(event) => {
+                      const promoterName = event.target.value;
+                      setPromoterStats((current) => current.map((item) =>
+                        item.promoterId === promoter.promoterId
+                          ? { ...item, promoterName }
+                          : item,
+                      ));
+                      setSavedPromoterId(null);
+                      setPromoterMessage("");
+                    }}
+                    aria-label={`${promoter.promoterSlug} promoter display name`}
+                  />
+                </label>
+                <small className="promoter-link-note">QR link: /p/{promoter.promoterSlug}</small>
+                <button
+                  className="secondary-button compact-button promoter-save-button"
+                  type="button"
+                  disabled={
+                    savingPromoterId === promoter.promoterId ||
+                    promoter.promoterName.trim().length === 0
+                  }
+                  onClick={() => {
+                    setSavingPromoterId(promoter.promoterId);
+                    setSavedPromoterId(null);
+                    setPromoterMessage("");
+                    void savePromoterSettings(promoter).then((result) => {
+                      setSavingPromoterId(null);
+                      if ("error" in result) {
+                        setPromoterMessage(result.error.message);
+                        return;
+                      }
+
+                      const savedName = String(result.data?.promoter?.name ?? promoter.promoterName);
+                      setPromoterStats((current) => current.map((item) =>
+                        item.promoterId === promoter.promoterId
+                          ? { ...item, promoterName: savedName }
+                          : item,
+                      ));
+                      setSavedPromoterId(promoter.promoterId);
+                      setPromoterMessage(`${savedName} saved.`);
+                    });
+                  }}
+                >
+                  {savingPromoterId === promoter.promoterId
+                    ? "Saving..."
+                    : savedPromoterId === promoter.promoterId
+                      ? "Saved"
+                      : "Save Name"}
+                </button>
                 <div className="promoter-stat-row">
                   <span>Registrations</span>
                   <span>{promoter.registrations}</span>
@@ -2167,6 +2242,7 @@ export function AdminPage() {
               </article>
             ))}
           </div>
+          {promoterMessage && <div className="notice-box promoter-save-notice">{promoterMessage}</div>}
         </section>
       </main>
     </Shell>

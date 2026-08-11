@@ -1440,6 +1440,39 @@ header nav,
   color: white;
 }
 
+.promoter-name-field {
+  display: grid;
+  gap: 7px;
+  color: #d5d5d5;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.promoter-name-field input {
+  width: 100%;
+  padding: 11px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #0c0c0c;
+  color: white;
+  font: inherit;
+}
+
+.promoter-name-field input:focus {
+  border-color: var(--gold);
+  outline: none;
+}
+
+.promoter-link-note {
+  display: block;
+  margin: 8px 0 12px;
+  color: var(--muted);
+}
+
+.promoter-save-notice {
+  margin-top: 18px;
+}
+
 .login-card {
   width: 100%;
   max-width: 520px;

@@ -47,17 +47,19 @@ export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   const body = await readJson(request);
   const id = Number(body?.id);
+  const name = typeof body?.name === "string" ? body.name.trim() : "";
   const passLimit = Number(body?.passLimit);
   const resetDays = Number(body?.resetDays);
 
   if (
     !Number.isInteger(id) || id <= 0 ||
+    name.length < 1 || name.length > 80 ||
     !Number.isInteger(passLimit) || passLimit < 1 || passLimit > 100 ||
     !Number.isInteger(resetDays) || resetDays < 1 || resetDays > 30
   ) {
     return failure(
       "VALIDATION_ERROR",
-      "Promoters must have 1–100 passes and reset every 1–30 days.",
+      "Promoter names must be 1–80 characters, with 1–100 passes and a 1–30 day reset.",
       400,
     );
   }
@@ -65,7 +67,8 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   try {
     const updated = await env.DB.prepare(`
       UPDATE promoters
-      SET pass_limit = ?,
+      SET name = ?,
+          pass_limit = ?,
           reset_days = ?,
           passes_used = MIN(passes_used, ?),
           last_reset_at = COALESCE(last_reset_at, CURRENT_TIMESTAMP)
@@ -79,7 +82,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
         passes_used,
         MAX(pass_limit - passes_used, 0) AS passes_remaining,
         last_reset_at
-    `).bind(passLimit, resetDays, passLimit, id).first();
+    `).bind(name, passLimit, resetDays, passLimit, id).first();
 
     if (!updated) {
       return failure("PROMOTER_NOT_FOUND", "Promoter not found.", 404);

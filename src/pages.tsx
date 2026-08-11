@@ -462,13 +462,7 @@ export function PromoterPage({
   promoterSlug: string;
   qrToken?: string;
 }) {
-  const promoterNames: Record<string, string> = {
-    mike: "Mike D.",
-    sarah: "Sarah K.",
-    james: "James R.",
-  };
-
-  const promoterName = promoterNames[promoterSlug] ?? promoterSlug;
+  const [promoterName, setPromoterName] = useState(promoterSlug);
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -478,6 +472,22 @@ export function PromoterPage({
     "idle" | "locating" | "submitting" | "success" | "error"
   >("idle");
   const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    void api<any>("/api/promoters").then((result) => {
+      if ("error" in result || !Array.isArray(result.data?.promoters)) {
+        return;
+      }
+
+      const promoter = result.data.promoters.find(
+        (item: any) => item.slug === promoterSlug,
+      );
+
+      if (promoter?.name) {
+        setPromoterName(String(promoter.name));
+      }
+    });
+  }, [promoterSlug]);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -1614,7 +1624,7 @@ export function AdminPage() {
     });
 
     void Promise.all([
-      api<any>("/api/analytics"),
+      api<any>("/api/stats"),
       api<any>("/api/promoters"),
     ]).then(([result, promotersResult]) => {
       if ("error" in result || !Array.isArray(result.data?.promoters)) {
@@ -1822,9 +1832,9 @@ export function AdminPage() {
                 value={eventPromoterId}
                 onChange={(event) => setEventPromoterId(event.target.value)}
               >
-                {VENUE.promoters.map((promoter) => (
-                  <option key={promoter.id} value={promoter.id}>
-                    {promoter.name}
+                {promoterStats.map((promoter) => (
+                  <option key={promoter.promoterId} value={promoter.promoterId}>
+                    {promoter.promoterName}
                   </option>
                 ))}
               </select>
@@ -1865,9 +1875,9 @@ export function AdminPage() {
                 className="event-qr-frame"
                 style={{
                   borderColor: promoterColor(
-                    VENUE.promoters.find(
-                      (promoter) => promoter.id === Number(eventPromoterId),
-                    )?.slug ?? "",
+                    promoterStats.find(
+                      (promoter) => promoter.promoterId === Number(eventPromoterId),
+                    )?.promoterSlug ?? "",
                   ),
                 }}
               >

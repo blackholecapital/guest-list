@@ -24,7 +24,7 @@ type Entry = {
 
 const fallbackSettings: ContestSettings = {
   title: "$1K Lingerie Contest",
-  eventDate: "2026-08-20",
+  eventDate: "2026-08-19",
   eventTime: "",
   venueName: "Scores Tampa",
   venueAddress: "2310 N Dale Mabry Hwy, Tampa, FL 33607",
@@ -59,6 +59,76 @@ function ContestHeader({ admin = false }: { admin?: boolean }) {
   </header>;
 }
 
+function ContestFlyer({ className = "" }: { className?: string }) {
+  return <div className={`contest-flyer-wrap ${className}`.trim()}>
+    <img
+      src="/assets/scores-lingerie-contest-flyer-v2.jpeg"
+      alt="$1K Lingerie Contest at Scores Tampa — weekly $300 contests followed by a $1,000 finale"
+    />
+  </div>;
+}
+
+export function ContestEventPage() {
+  const [settings, setSettings] = useState(fallbackSettings);
+
+  useEffect(() => {
+    void jsonApi<{ settings: ContestSettings }>("/api/contest-settings")
+      .then(response => setSettings(response.settings))
+      .catch(() => {});
+  }, []);
+
+  return <div className="contest-shell contest-event-shell">
+    <ContestHeader />
+    <main className="contest-event-page">
+      <section className="contest-event-hero">
+        <div className="contest-stage-glow" />
+        <ContestFlyer className="contest-event-flyer" />
+        <div className="contest-event-intro">
+          <p className="contest-neon-kicker">Open to all women · No experience necessary</p>
+          <h1><span className="contest-chrome">The $1K Lingerie</span><span className="contest-script">Contest</span></h1>
+          <p className="contest-event-date">Starting {eventLabel(settings)}</p>
+          <p className="contest-event-lead">Our amateur lingerie contest is about to begin. The spotlight is waiting—sign up, bring your friends, work the crowd, and take the crown at Scores Tampa.</p>
+          <a className="contest-register-cta" href="/contest/register">Register now <span>→</span></a>
+          <small>Once registered, you’ll receive a text or email follow-up with your details.</small>
+        </div>
+      </section>
+
+      <section className="contest-event-details">
+        <div className="contest-copy-card contest-copy-wide">
+          <p className="eyebrow">Every Wednesday · One winner</p>
+          <h2>Bring the energy. Win the room.</h2>
+          <p>Contestants are judged through crowd participation, one secret judge, and one member of Scores management. Bring your friends—the crowd matters.</p>
+        </div>
+        <div className="contest-copy-card contest-weekly-prize">
+          <span className="contest-card-icon">💵</span>
+          <p className="eyebrow">Weekly winner</p>
+          <h3>$300 cash</h3>
+          <p>Plus a bar tab to celebrate the win.</p>
+        </div>
+        <div className="contest-copy-card contest-finale-prize">
+          <span className="contest-card-icon">🏆</span>
+          <p className="eyebrow">Grand finale</p>
+          <h3>$1,000 first place</h3>
+          <p><strong>$250</strong> for second place. The top four weekly winners face off for the crown.</p>
+        </div>
+        <div className="contest-judging-card">
+          <p className="eyebrow">How judging works</p>
+          <div><span>01</span><strong>Crowd participation</strong><small>Bring your friends and own the room.</small></div>
+          <div><span>02</span><strong>Secret judge</strong><small>One anonymous judge scores every contestant.</small></div>
+          <div><span>03</span><strong>Management</strong><small>One Scores management vote completes the panel.</small></div>
+        </div>
+      </section>
+
+      <section className="contest-event-close">
+        <p className="contest-neon-kicker">Ladies… who could use some extra cash?</p>
+        <h2>Sign up. Bring your friends.<br />Work the crowd. Take the crown.</h2>
+        <a className="contest-register-cta" href="/contest/register">Enter the contest <span>→</span></a>
+        <div className="contest-venue contest-event-venue"><strong>Scores Tampa</strong><span>2310 N Dale Mabry Hwy, Tampa, FL 33607</span><a href="tel:+18138757912">813-875-7912</a></div>
+      </section>
+    </main>
+  </div>;
+}
+
 export function ContestEntryPage() {
   const [settings, setSettings] = useState(fallbackSettings);
   const [submitting, setSubmitting] = useState(false);
@@ -83,27 +153,26 @@ export function ContestEntryPage() {
     <main className="contest-entry-page">
       <section className="contest-promo-panel">
         <div className="contest-stage-glow" />
-        <div className="contest-flyer-wrap">
-          <img src="/assets/scores-lingerie-contest-flyer-v1.jpeg" alt="$1K Lingerie Contest at Scores Tampa — three weekly contests followed by a $1,000 championship" />
-        </div>
+        <ContestFlyer />
         <div className="contest-promo-copy">
-          <p className="contest-neon-kicker">Contestants Wanted</p>
+          <a className="contest-back-link" href="/contest">← Event details</a>
+          <p className="contest-neon-kicker">Official registration</p>
           <h1><span className="contest-chrome">$1K Lingerie</span><span className="contest-script">Contest</span></h1>
           <p className="contest-event-date">Starting {eventLabel(settings)}</p>
           <div className="contest-prize-path" aria-label="Contest format">
-            <span><strong>3</strong> Weekly contests</span>
+            <span><strong>$300</strong> Weekly winner + bar tab</span>
             <i>→</i>
-            <span><strong>$1,000</strong> Championship</span>
+            <span><strong>$1,000</strong> Grand finale winner</span>
           </div>
-          <p>Bring the confidence. Own the stage. Compete across three weekly rounds for your shot at the championship and the $1,000 prize.</p>
+          <p>Open to all women. No experience necessary. One winner every Wednesday, with the top four weekly winners advancing to the grand finale.</p>
           <div className="contest-venue"><strong>{settings.venueName}</strong><span>{settings.venueAddress}</span><a href="tel:+18138757912">813-875-7912</a></div>
         </div>
       </section>
 
       <section className="contest-form-panel">
-        {success ? <div className="contest-success"><span>✓</span><p className="eyebrow">Entry received</p><h2>You’re officially in the running.</h2><p>Our team will review your submission and contact you if you’re selected.</p><button className="secondary-button" onClick={() => setSuccess(false)}>Submit another entry</button></div> : <>
+        {success ? <div className="contest-success"><span>✓</span><p className="eyebrow">Entry received</p><h2>You’re officially in the running.</h2><p>Our team will review your submission and follow up by text or email with your contest details.</p><button className="secondary-button" onClick={() => setSuccess(false)}>Submit another entry</button></div> : <>
           <div className="contest-form-prize"><span>$1,000</span><small>Championship prize</small></div>
-          <p className="eyebrow">Official registration</p><h2>Take your shot.</h2><p className="muted">All contestants must be 21 or older. Your photos are private and available only to authorized contest staff.</p>
+          <p className="eyebrow">Enter the contest</p><h2>Take your shot.</h2><p className="muted">All contestants must be 21 or older. Your photos are private and available only to authorized contest staff.</p>
           <form className="contest-form" onSubmit={submit}>
             <label>Full name<input name="name" autoComplete="name" required minLength={2} /></label>
             <div className="contest-field-row"><label>Phone number<input name="phone" type="tel" autoComplete="tel" required /></label><label>Email address<input name="email" type="email" autoComplete="email" required /></label></div>
@@ -148,7 +217,7 @@ export function ContestAdminPage() {
 
   const counts = { all: entries.length, pending: entries.filter(e => e.status === "pending").length, approved: entries.filter(e => e.status === "approved").length, denied: entries.filter(e => e.status === "denied").length };
   return <div className="contest-admin-shell"><ContestHeader admin /><main className="page wide contest-admin-page">
-    <div className="page-heading"><div><p className="eyebrow">Applications</p><h1>Lingerie Contest</h1><p className="muted">Review applicants, view photos, and manage the event invitation.</p></div><a className="secondary-button" href="/contest" target="_blank">View entry page ↗</a></div>
+    <div className="page-heading"><div><p className="eyebrow">Applications</p><h1>Lingerie Contest</h1><p className="muted">Review applicants, view photos, and manage the event invitation.</p></div><div className="contest-admin-links"><a className="secondary-button" href="/contest" target="_blank">Event page ↗</a><a className="secondary-button" href="/contest/register" target="_blank">Registration ↗</a></div></div>
     <form className="contest-settings-card" onSubmit={saveSettings}><div><p className="eyebrow">Event settings</p><h2>Contest details</h2></div><label>Event title<input value={settings.title} onChange={e => setSettings({ ...settings, title: e.target.value })} required /></label><label>Date<input type="date" value={settings.eventDate} onChange={e => setSettings({ ...settings, eventDate: e.target.value })} /></label><label>Time<input type="time" value={settings.eventTime} onChange={e => setSettings({ ...settings, eventTime: e.target.value })} /></label><label className="contest-message-field">Approval SMS<textarea rows={3} value={settings.approvalMessage} onChange={e => setSettings({ ...settings, approvalMessage: e.target.value })} /><small>Variables: {"{name}"}, {"{title}"}, {"{venue}"}, {"{date}"}, {"{time}"}</small></label><button className="primary-button" disabled={saving}>{saving ? "Saving…" : "Save event"}</button></form>
     {message && <div className="notice-box">{message}</div>}
     <div className="contest-filter-row">{(["all", "pending", "approved", "denied"] as const).map(key => <button key={key} className={`filter-pill ${filter === key ? "is-active" : ""}`} onClick={() => setFilter(key)}>{key[0].toUpperCase()+key.slice(1)} ({counts[key]})</button>)}</div>

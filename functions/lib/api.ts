@@ -2,6 +2,7 @@ export interface Env {
   DB: D1Database;
   ADMIN_CONFIG_KEY?: string;
   guest_followups?: Queue;
+  CONTEST_PHOTOS?: R2Bucket;
 }
 
 export interface VenueRow {

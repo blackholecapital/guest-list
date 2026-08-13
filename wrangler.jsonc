@@ -13,6 +13,14 @@
   ]
 
 ,
+  "r2_buckets": [
+    {
+      "binding": "CONTEST_PHOTOS",
+      "bucket_name": "guest-list-contest-photos"
+    }
+  ]
+
+,
   "queues": {
     "producers": [
       {

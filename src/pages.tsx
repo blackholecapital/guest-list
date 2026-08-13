@@ -332,6 +332,7 @@ function Shell({
             )}
             {session.role === "admin" && <a href="/stats">Stats</a>}
             {session.role === "admin" && <a href="/promoters">Promoters</a>}
+            {session.role === "admin" && <a href="/contest-admin">Contest</a>}
             {session.role === "promoter" && (
               <a href={`/promoter/${session.promoterSlug}`}>My QR Codes</a>
             )}

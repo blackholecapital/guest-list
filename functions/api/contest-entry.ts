@@ -41,6 +41,18 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
       savedKeys.push(key);
       await env.DB.prepare(`INSERT INTO contest_photos (entry_id, object_key, content_type, file_name) VALUES (?, ?, ?, ?)`).bind(entryId, key, photo.type, photo.name.slice(0, 240)).run();
     }
+    if (smsOptIn && env.guest_followups) {
+      try {
+        await env.guest_followups.send({
+          phone,
+          name,
+          smsOptIn: true,
+          messageBody: `We received your Scores Tampa $1K Lingerie Contest registration. Weekly contests begin Wednesday, August 19. Our team will follow up with your details. Reply STOP to opt out.`,
+        });
+      } catch (queueError) {
+        console.error("contest registration SMS enqueue failed", queueError);
+      }
+    }
   } catch (error) {
     await Promise.all(savedKeys.map(key => env.CONTEST_PHOTOS!.delete(key)));
     await env.DB.prepare(`DELETE FROM contest_entries WHERE id = ?`).bind(entryId).run();

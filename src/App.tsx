@@ -10,7 +10,7 @@ import {
   PromotersDashboardPage,
   StatsPage,
 } from "./pages";
-import { ContestAdminPage, ContestEntryPage } from "./contest";
+import { ContestAdminPage, ContestEntryPage, ContestEventPage } from "./contest";
 import {
   canAccessInternalPath,
   getDemoSession,
@@ -25,7 +25,11 @@ export default function App() {
   }
 
   const isPublicGuestPath =
-    path.startsWith("/join/") || path.startsWith("/p/") || path === "/location-help" || path === "/contest";
+    path.startsWith("/join/") ||
+    path.startsWith("/p/") ||
+    path === "/location-help" ||
+    path === "/contest" ||
+    path === "/contest/register";
   const session = getDemoSession();
 
   if (!isPublicGuestPath && !session) {
@@ -64,6 +68,10 @@ export default function App() {
   }
 
   if (path === "/contest") {
+    return <ContestEventPage />;
+  }
+
+  if (path === "/contest/register") {
     return <ContestEntryPage />;
   }
 

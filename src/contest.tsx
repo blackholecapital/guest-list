@@ -23,8 +23,8 @@ type Entry = {
 };
 
 const fallbackSettings: ContestSettings = {
-  title: "Scores Lingerie Contest",
-  eventDate: "",
+  title: "$1K Lingerie Contest",
+  eventDate: "2026-08-20",
   eventTime: "",
   venueName: "Scores Tampa",
   venueAddress: "2310 N Dale Mabry Hwy, Tampa, FL 33607",
@@ -82,19 +82,28 @@ export function ContestEntryPage() {
     <ContestHeader />
     <main className="contest-entry-page">
       <section className="contest-promo-panel">
-        <div className="contest-promo-shade" />
+        <div className="contest-stage-glow" />
+        <div className="contest-flyer-wrap">
+          <img src="/assets/scores-lingerie-contest-flyer-v1.jpeg" alt="$1K Lingerie Contest at Scores Tampa — three weekly contests followed by a $1,000 championship" />
+        </div>
         <div className="contest-promo-copy">
-          <p className="eyebrow">Now accepting contestants</p>
-          <h1>{settings.title}</h1>
-          <p className="contest-event-date">{eventLabel(settings)}</p>
-          <p>Step into the spotlight for an upscale night of confidence, style, and competition at {settings.venueName}.</p>
-          <div className="contest-venue"><strong>{settings.venueName}</strong><span>{settings.venueAddress}</span></div>
+          <p className="contest-neon-kicker">Contestants Wanted</p>
+          <h1><span className="contest-chrome">$1K Lingerie</span><span className="contest-script">Contest</span></h1>
+          <p className="contest-event-date">Starting {eventLabel(settings)}</p>
+          <div className="contest-prize-path" aria-label="Contest format">
+            <span><strong>3</strong> Weekly contests</span>
+            <i>→</i>
+            <span><strong>$1,000</strong> Championship</span>
+          </div>
+          <p>Bring the confidence. Own the stage. Compete across three weekly rounds for your shot at the championship and the $1,000 prize.</p>
+          <div className="contest-venue"><strong>{settings.venueName}</strong><span>{settings.venueAddress}</span><a href="tel:+18138757912">813-875-7912</a></div>
         </div>
       </section>
 
       <section className="contest-form-panel">
         {success ? <div className="contest-success"><span>✓</span><p className="eyebrow">Entry received</p><h2>You’re officially in the running.</h2><p>Our team will review your submission and contact you if you’re selected.</p><button className="secondary-button" onClick={() => setSuccess(false)}>Submit another entry</button></div> : <>
-          <p className="eyebrow">Contest registration</p><h2>Enter the contest</h2><p className="muted">All contestants must be 21 or older. Your photos are private and available only to authorized contest staff.</p>
+          <div className="contest-form-prize"><span>$1,000</span><small>Championship prize</small></div>
+          <p className="eyebrow">Official registration</p><h2>Take your shot.</h2><p className="muted">All contestants must be 21 or older. Your photos are private and available only to authorized contest staff.</p>
           <form className="contest-form" onSubmit={submit}>
             <label>Full name<input name="name" autoComplete="name" required minLength={2} /></label>
             <div className="contest-field-row"><label>Phone number<input name="phone" type="tel" autoComplete="tel" required /></label><label>Email address<input name="email" type="email" autoComplete="email" required /></label></div>

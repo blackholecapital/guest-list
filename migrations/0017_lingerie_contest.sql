@@ -1,7 +1,7 @@
 CREATE TABLE contest_settings (
   id INTEGER PRIMARY KEY CHECK (id = 1),
-  title TEXT NOT NULL DEFAULT 'Scores Lingerie Contest',
-  event_date TEXT NOT NULL DEFAULT '',
+  title TEXT NOT NULL DEFAULT '$1K Lingerie Contest',
+  event_date TEXT NOT NULL DEFAULT '2026-08-20',
   event_time TEXT NOT NULL DEFAULT '',
   venue_name TEXT NOT NULL DEFAULT 'Scores Tampa',
   venue_address TEXT NOT NULL DEFAULT '2310 N Dale Mabry Hwy, Tampa, FL 33607',

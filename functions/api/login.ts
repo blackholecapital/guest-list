@@ -1,6 +1,6 @@
 import { failure, readJson, success, type Env } from "../lib/api";
 import { createAdminSession } from "../lib/admin-session";
-import { constantTimeEqual, hashPassword } from "../lib/passwords";
+import { constantTimeEqual, verifyPassword } from "../lib/passwords";
 
 const staffAccounts = [
   { username: "Door", passwordKey: "DOOR_LOGIN_PASSWORD", role: "door" },
@@ -15,7 +15,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
 
   const staff = staffAccounts.find(account => account.username.toLowerCase() === username.toLowerCase());
   if (staff) {
-    const configuredPassword = staff.username === "Admin" ? "admin222" : env[staff.passwordKey];
+    const configuredPassword = env[staff.passwordKey];
     if (!configuredPassword) {
       return failure("LOGIN_NOT_CONFIGURED", "This login has not been configured yet.", 503);
     }
@@ -40,8 +40,14 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
 
   if (promoter) {
     const loginUsername = String(promoter.login_username);
-    const matches = promoter.password_hash && promoter.password_salt
-      ? constantTimeEqual(await hashPassword(password, String(promoter.password_salt)), String(promoter.password_hash))
+    const pepper = env.PROMOTER_PASSWORD_PEPPER?.trim() ?? "";
+    const matches = promoter.password_hash && promoter.password_salt && pepper.length >= 32
+      ? await verifyPassword(
+          password,
+          String(promoter.password_salt),
+          String(promoter.password_hash),
+          pepper,
+        )
       : false;
     if (matches) {
       return success({ session: { username: loginUsername, role: "promoter", promoterSlug: String(promoter.slug) } });

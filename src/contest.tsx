@@ -38,14 +38,22 @@ async function jsonApi<T>(url: string, init?: RequestInit): Promise<T> {
   return body.data;
 }
 
-function eventLabel(settings: ContestSettings) {
-  if (!settings.eventDate) return "Event date coming soon";
-  const date = new Date(`${settings.eventDate}T12:00:00`).toLocaleDateString("en-US", {
-    weekday: "long", month: "long", day: "numeric", year: "numeric",
-  });
-  if (!settings.eventTime) return date;
-  const time = new Date(`2000-01-01T${settings.eventTime}`).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-  return `${date} · ${time}`;
+function campaignStartLabel(settings: ContestSettings) {
+  const eventDate = settings.eventDate || fallbackSettings.eventDate;
+  const date = new Date(`${eventDate}T12:00:00`);
+  const day = date.getDate();
+  const suffix = day % 100 >= 11 && day % 100 <= 13 ? "th" : day % 10 === 1 ? "st" : day % 10 === 2 ? "nd" : day % 10 === 3 ? "rd" : "th";
+  const weekday = date.toLocaleDateString("en-US", { weekday: "long" });
+  const month = date.toLocaleDateString("en-US", { month: "long" });
+  return `${weekday}, ${month} ${day}${suffix}`;
+}
+
+function withContestDefaults(settings: ContestSettings) {
+  return {
+    ...fallbackSettings,
+    ...settings,
+    eventDate: settings.eventDate || fallbackSettings.eventDate,
+  };
 }
 
 function ContestHeader({ admin = false }: { admin?: boolean }) {
@@ -73,7 +81,7 @@ export function ContestEventPage() {
 
   useEffect(() => {
     void jsonApi<{ settings: ContestSettings }>("/api/contest-settings")
-      .then(response => setSettings(response.settings))
+      .then(response => setSettings(withContestDefaults(response.settings)))
       .catch(() => {});
   }, []);
 
@@ -86,43 +94,46 @@ export function ContestEventPage() {
         <div className="contest-event-intro">
           <p className="contest-neon-kicker">Open to all women · No experience necessary</p>
           <h1><span className="contest-chrome">The $1K Lingerie</span><span className="contest-script">Contest</span></h1>
-          <p className="contest-event-date">Starting {eventLabel(settings)}</p>
-          <p className="contest-event-lead">Our amateur lingerie contest is about to begin. The spotlight is waiting—sign up, bring your friends, work the crowd, and take the crown at Scores Tampa.</p>
+          <p className="contest-start-banner"><span aria-hidden="true">📅</span> Starting {campaignStartLabel(settings)}</p>
+          <p className="contest-event-lead"><strong>The $1K Lingerie Contest is about to begin!</strong> We’re hosting an amateur lingerie contest at Scores Tampa. Think you’ve got what it takes? Come show us!</p>
           <a className="contest-register-cta" href="/contest/register">Register now <span>→</span></a>
-          <small>Once registered, you’ll receive a text or email follow-up with your details.</small>
+          <small><span aria-hidden="true">📲</span> Register using the link. Once registered, you’ll receive a text or email confirmation with your details.</small>
         </div>
       </section>
 
       <section className="contest-event-details">
         <div className="contest-copy-card contest-copy-wide">
-          <p className="eyebrow">Every Wednesday · One winner</p>
+          <p className="eyebrow"><span aria-hidden="true">🏆</span> Every Wednesday — one winner!</p>
           <h2>Bring the energy. Win the room.</h2>
-          <p>Contestants are judged through crowd participation, one secret judge, and one member of Scores management. Bring your friends—the crowd matters.</p>
+          <p>Each week, contestants will be judged based on crowd participation, one secret judge, and one member of Scores management. Bring your friends—the crowd matters.</p>
         </div>
         <div className="contest-copy-card contest-weekly-prize">
           <span className="contest-card-icon">💵</span>
-          <p className="eyebrow">Weekly winner</p>
-          <h3>$300 cash</h3>
-          <p>Plus a bar tab to celebrate the win.</p>
+          <p className="eyebrow">Weekly winner gets</p>
+          <h3>$300 cash + a bar tab</h3>
+          <p>Celebrate the win! <span aria-hidden="true">🍾🥂</span></p>
         </div>
         <div className="contest-copy-card contest-finale-prize">
           <span className="contest-card-icon">🏆</span>
           <p className="eyebrow">Grand finale</p>
-          <h3>$1,000 first place</h3>
-          <p><strong>$250</strong> for second place. The top four weekly winners face off for the crown.</p>
+          <h3>Top four face off</h3>
+          <p>After we crown our top four weekly winners, they’ll compete in the Grand Finale.</p>
+          <div className="contest-medal-prizes"><strong><span aria-hidden="true">🥇</span> 1st place — $1,000 cash</strong><strong><span aria-hidden="true">🥈</span> 2nd place — $250 cash</strong></div>
         </div>
         <div className="contest-judging-card">
           <p className="eyebrow">How judging works</p>
-          <div><span>01</span><strong>Crowd participation</strong><small>Bring your friends and own the room.</small></div>
-          <div><span>02</span><strong>Secret judge</strong><small>One anonymous judge scores every contestant.</small></div>
-          <div><span>03</span><strong>Management</strong><small>One Scores management vote completes the panel.</small></div>
+          <div><span aria-hidden="true">👑</span><strong>Crowd participation</strong><small>Bring your friends and own the room.</small></div>
+          <div><span aria-hidden="true">🕵️</span><strong>One secret judge</strong><small>One anonymous judge scores every contestant.</small></div>
+          <div><span aria-hidden="true">⭐</span><strong>One member of management</strong><small>One Scores management vote completes the panel.</small></div>
         </div>
       </section>
 
       <section className="contest-event-close">
-        <p className="contest-neon-kicker">Ladies… who could use some extra cash?</p>
-        <h2>Sign up. Bring your friends.<br />Work the crowd. Take the crown.</h2>
+        <p className="contest-neon-kicker">Ladies… who could use some extra cash? <span aria-hidden="true">👀💋</span></p>
+        <h2>Sign up. Bring your friends.<br />Work the crowd. Take the crown. <span aria-hidden="true">👑</span></h2>
         <a className="contest-register-cta" href="/contest/register">Enter the contest <span>→</span></a>
+        <p className="contest-register-prompt"><span aria-hidden="true">👇</span> Register at the link below! <span aria-hidden="true">👇</span></p>
+        <div className="contest-event-meta"><p><span aria-hidden="true">📍</span> Scores Tampa</p><p><span aria-hidden="true">📅</span> Starting {campaignStartLabel(settings)}</p></div>
         <div className="contest-venue contest-event-venue"><strong>Scores Tampa</strong><span>2310 N Dale Mabry Hwy, Tampa, FL 33607</span><a href="tel:+18138757912">813-875-7912</a></div>
       </section>
     </main>
@@ -136,7 +147,7 @@ export function ContestEntryPage() {
   const [error, setError] = useState("");
   const [photoNames, setPhotoNames] = useState<string[]>([]);
 
-  useEffect(() => { void jsonApi<{ settings: ContestSettings }>("/api/contest-settings").then(r => setSettings(r.settings)).catch(() => {}); }, []);
+  useEffect(() => { void jsonApi<{ settings: ContestSettings }>("/api/contest-settings").then(r => setSettings(withContestDefaults(r.settings))).catch(() => {}); }, []);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setSubmitting(true); setError("");
@@ -158,11 +169,11 @@ export function ContestEntryPage() {
           <a className="contest-back-link" href="/contest">← Event details</a>
           <p className="contest-neon-kicker">Official registration</p>
           <h1><span className="contest-chrome">$1K Lingerie</span><span className="contest-script">Contest</span></h1>
-          <p className="contest-event-date">Starting {eventLabel(settings)}</p>
+          <p className="contest-start-banner"><span aria-hidden="true">📅</span> Starting {campaignStartLabel(settings)}</p>
           <div className="contest-prize-path" aria-label="Contest format">
-            <span><strong>$300</strong> Weekly winner + bar tab</span>
+            <span><strong>💵 $300</strong> Weekly winner + bar tab 🍾🥂</span>
             <i>→</i>
-            <span><strong>$1,000</strong> Grand finale winner</span>
+            <span><strong>🏆 $1,000</strong> Grand finale winner 👑</span>
           </div>
           <p>Open to all women. No experience necessary. One winner every Wednesday, with the top four weekly winners advancing to the grand finale.</p>
           <div className="contest-venue"><strong>{settings.venueName}</strong><span>{settings.venueAddress}</span><a href="tel:+18138757912">813-875-7912</a></div>

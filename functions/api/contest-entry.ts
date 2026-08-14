@@ -1,4 +1,5 @@
 import { failure, normalizePhone, success, type Env } from "../lib/api";
+import { contestRoundLabel, formatContestDate, getCurrentContestSettings } from "../lib/contest-schedule";
 
 const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
 const maxBytes = 8 * 1024 * 1024;
@@ -43,11 +44,16 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     }
     if (smsOptIn && env.guest_followups) {
       try {
+        const settings = await getCurrentContestSettings(env.DB);
+        const eventDate = settings?.event_date || "2026-08-19";
+        const round = settings
+          ? contestRoundLabel(settings.current_round, settings.weekly_rounds)
+          : "Weekly Contest 1 of 4";
         await env.guest_followups.send({
           phone,
           name,
           smsOptIn: true,
-          messageBody: `We received your Scores Tampa $1K Lingerie Contest registration. Weekly contests begin Wednesday, August 19. Our team will follow up with your details. Reply STOP to opt out.`,
+          messageBody: `We received your Scores Tampa $1K Lingerie Contest registration. The next event is ${round} on ${formatContestDate(eventDate)}. Our team will follow up with your details. Reply STOP to opt out.`,
         });
       } catch (queueError) {
         console.error("contest registration SMS enqueue failed", queueError);

@@ -1,10 +1,11 @@
 import { failure, readJson, success, type Env } from "../lib/api";
+import { contestRoundLabel, getCurrentContestSettings } from "../lib/contest-schedule";
 
-function map(row: any) { return { title: row.title, eventDate: row.event_date, eventTime: row.event_time, venueName: row.venue_name, venueAddress: row.venue_address, approvalMessage: row.approval_message }; }
+function map(row: any) { return { title: row.title, eventDate: row.event_date, eventTime: row.event_time, venueName: row.venue_name, venueAddress: row.venue_address, approvalMessage: row.approval_message, reminderMessage: row.reminder_message, currentRound: row.current_round, weeklyRounds: row.weekly_rounds, roundLabel: contestRoundLabel(Number(row.current_round), Number(row.weekly_rounds)) }; }
 
 export const onRequest: PagesFunction<Env> = async ({ request, env }) => {
   if (request.method === "GET") {
-    const row = await env.DB.prepare(`SELECT * FROM contest_settings WHERE id = 1`).first<any>();
+    const row = await getCurrentContestSettings(env.DB);
     return row ? success({ settings: map(row) }) : failure("NOT_CONFIGURED", "Contest settings are not available.", 404);
   }
   if (request.method === "POST") {

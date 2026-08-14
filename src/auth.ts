@@ -65,6 +65,7 @@ export async function loginDemoAccount(
 }
 
 export function logoutDemoAccount() {
+  void fetch("/api/logout", { method: "POST", keepalive: true });
   window.sessionStorage.removeItem(SESSION_KEY);
   window.location.assign("/login");
 }

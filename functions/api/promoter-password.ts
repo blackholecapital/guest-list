@@ -1,10 +1,10 @@
 import { createSalt, hashPassword } from "../lib/passwords";
+import { hasAdminSession } from "../lib/admin-session";
 import { failure, readJson, success, type Env } from "../lib/api";
 
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
-  const suppliedKey = request.headers.get("X-Admin-Key");
-  if (!env.ADMIN_CONFIG_KEY || !suppliedKey || suppliedKey !== env.ADMIN_CONFIG_KEY) {
-    return failure("ADMIN_KEY_REQUIRED", "Enter the valid admin configuration key before changing a password.", 401);
+  if (!await hasAdminSession(request, env.DB)) {
+    return failure("ADMIN_SESSION_REQUIRED", "Your Admin session expired. Log out and sign in again.", 401);
   }
 
   const body = await readJson(request);

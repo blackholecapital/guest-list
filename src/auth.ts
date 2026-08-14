@@ -3,7 +3,7 @@ export type DemoRole = "door" | "admin" | "promoter";
 export type DemoSession = {
   username: "Door" | "Admin" | "Blue" | "Yellow" | "Red";
   role: DemoRole;
-  promoterSlug?: "mike" | "james" | "sarah";
+  promoterSlug?: "blue" | "yellow" | "red";
 };
 
 const SESSION_KEY = "guest-list-demo-session";
@@ -14,17 +14,17 @@ export const LOGIN_ACCOUNTS: DemoSession[] = [
   {
     username: "Blue",
     role: "promoter",
-    promoterSlug: "mike",
+    promoterSlug: "blue",
   },
   {
     username: "Yellow",
     role: "promoter",
-    promoterSlug: "james",
+    promoterSlug: "yellow",
   },
   {
     username: "Red",
     role: "promoter",
-    promoterSlug: "sarah",
+    promoterSlug: "red",
   },
 ];
 

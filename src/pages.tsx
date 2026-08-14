@@ -1,5 +1,6 @@
 import VipPackages from "./VipPackages";
 import { promoterColor } from "./promoter-theme";
+import qrcode from "qrcode-generator";
 import {
   LOGIN_ACCOUNTS,
   getDemoSession,
@@ -40,9 +41,9 @@ const VENUE = {
     ["Saturday", "6:00 PM – 3:00 AM"],
   ],
   promoters: [
-    { id: 1, name: "Mike D.", slug: "mike" },
-    { id: 2, name: "Sarah K.", slug: "sarah" },
-    { id: 3, name: "James R.", slug: "james" },
+    { id: 1, name: "Blue", slug: "blue" },
+    { id: 2, name: "Red", slug: "red" },
+    { id: 3, name: "Yellow", slug: "yellow" },
   ],
 };
 
@@ -77,8 +78,8 @@ const DEMO_STATS = {
   promoters: [
     {
       promoterId: 1,
-      promoterName: "Mike D.",
-      promoterSlug: "mike",
+      promoterName: "Blue",
+      promoterSlug: "blue",
       registrations: 0,
       totalPartySize: 0,
       checkedIn: 0,
@@ -88,8 +89,8 @@ const DEMO_STATS = {
     },
     {
       promoterId: 2,
-      promoterName: "Sarah K.",
-      promoterSlug: "sarah",
+      promoterName: "Red",
+      promoterSlug: "red",
       registrations: 0,
       totalPartySize: 0,
       checkedIn: 0,
@@ -99,8 +100,8 @@ const DEMO_STATS = {
     },
     {
       promoterId: 3,
-      promoterName: "James R.",
-      promoterSlug: "james",
+      promoterName: "Yellow",
+      promoterSlug: "yellow",
       registrations: 0,
       totalPartySize: 0,
       checkedIn: 0,
@@ -125,6 +126,13 @@ function dateInputValue(daysFromToday: number) {
   date.setDate(date.getDate() + daysFromToday);
   const offset = date.getTimezoneOffset() * 60 * 1000;
   return new Date(date.getTime() - offset).toISOString().slice(0, 10);
+}
+
+function promoterQrDataUrl(slug: string) {
+  const qr = qrcode(0, "M");
+  qr.addData(`${window.location.origin}/p/${slug}`);
+  qr.make();
+  return qr.createDataURL(8, 16);
 }
 
 async function api<T>(
@@ -1688,7 +1696,7 @@ export function PromotersDashboardPage() {
                   >
                     <img
                       className="promoter-qr-image"
-                      src={`/assets/${promoter.promoterSlug}_guest_list_qr.png`}
+                      src={promoterQrDataUrl(promoter.promoterSlug)}
                       alt={`${promoter.promoterName} guest-list QR code`}
                     />
                   </div>

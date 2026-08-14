@@ -1,4 +1,5 @@
 import { failure, success, type Env } from "../lib/api";
+import { reportingWindow, sqlDateWindow } from "../lib/reporting";
 
 const TAMPA_BAY_BOUNDS = {
   south: 27.45,
@@ -7,8 +8,10 @@ const TAMPA_BAY_BOUNDS = {
   east: -81.85,
 };
 
-export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
+export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   try {
+    const reporting = await reportingWindow(request, env);
+    const guestWindow = sqlDateWindow("COALESCE(g.event_date, substr(g.created_at, 1, 10))", reporting);
     const rows = await env.DB.prepare(`
       SELECT
         g.id,
@@ -24,6 +27,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
       WHERE g.submitted_latitude IS NOT NULL
         AND g.submitted_longitude IS NOT NULL
         AND g.location_exception = 0
+        ${guestWindow.clause}
       UNION ALL
       SELECT
         g.id,
@@ -42,9 +46,10 @@ export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
         AND a.outcome = 'generated'
         AND a.latitude IS NOT NULL
         AND a.longitude IS NOT NULL
+        ${guestWindow.clause}
       ORDER BY 4 DESC
       LIMIT 5000
-    `).all<any>();
+    `).bind(...guestWindow.values, ...guestWindow.values).all<any>();
 
     const points = (rows.results ?? []).map((row) => {
       const latitude = Number(row.latitude);
@@ -86,6 +91,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
       onMapCount: points.filter((point) => point.onMap).length,
       offMapCount: points.filter((point) => !point.onMap).length,
       offMapByPromoter: Array.from(offMapByPromoter.values()),
+      reporting,
     });
   } catch (error) {
     console.error("registration-map failed", error);

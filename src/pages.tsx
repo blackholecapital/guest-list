@@ -1,7 +1,7 @@
 import VipPackages from "./VipPackages";
 import { promoterColor } from "./promoter-theme";
 import {
-  DEMO_ACCOUNTS,
+  LOGIN_ACCOUNTS,
   getDemoSession,
   landingPath,
   loginDemoAccount,
@@ -64,196 +64,49 @@ type DemoGuest = {
 const MAPS_URL = `https://maps.google.com/?q=${encodeURIComponent(VENUE.address)}`;
 const TEL_URL = "tel:+18138757112";
 
-const DEMO_GUESTS: DemoGuest[] = [
-  {
-    id: 1,
-    name: "John Smith",
-    phone: "(813) 555-0101",
-    promoterName: "Mike D.",
-    promoterSlug: "mike",
-    partySize: 1,
-    registeredAt: "2026-07-26T18:08:00-04:00",
-    status: "checked_in",
-    checkedInAt: "2026-07-26T22:04:00-04:00",
-    flagReason: null,
-  },
-  {
-    id: 2,
-    name: "Ashley Carter",
-    phone: "(813) 555-0102",
-    promoterName: "Mike D.",
-    promoterSlug: "mike",
-    partySize: 2,
-    registeredAt: "2026-07-26T18:42:00-04:00",
-    status: "checked_in",
-    checkedInAt: "2026-07-26T22:17:00-04:00",
-    flagReason: null,
-  },
-  {
-    id: 3,
-    name: "Chris Bennett",
-    phone: "(813) 555-0103",
-    promoterName: "Mike D.",
-    promoterSlug: "mike",
-    partySize: 1,
-    registeredAt: "2026-07-26T19:05:00-04:00",
-    status: "checked_in",
-    checkedInAt: "2026-07-26T22:33:00-04:00",
-    flagReason: null,
-  },
-  {
-    id: 4,
-    name: "Monica Reed",
-    phone: "(813) 555-0104",
-    promoterName: "Mike D.",
-    promoterSlug: "mike",
-    partySize: 1,
-    registeredAt: "2026-07-26T19:21:00-04:00",
-    status: "checked_in",
-    checkedInAt: "2026-07-26T22:49:00-04:00",
-    flagReason: null,
-  },
-
-  {
-    id: 5,
-    name: "Jessica Miller",
-    phone: "(813) 555-0201",
-    promoterName: "Sarah K.",
-    promoterSlug: "sarah",
-    partySize: 2,
-    registeredAt: "2026-07-26T18:15:00-04:00",
-    status: "checked_in",
-    checkedInAt: "2026-07-26T22:11:00-04:00",
-    flagReason: null,
-  },
-  {
-    id: 6,
-    name: "David Lee",
-    phone: "(813) 555-0202",
-    promoterName: "Sarah K.",
-    promoterSlug: "sarah",
-    partySize: 1,
-    registeredAt: "2026-07-26T18:51:00-04:00",
-    status: "checked_in",
-    checkedInAt: "2026-07-26T22:22:00-04:00",
-    flagReason: null,
-  },
-  {
-    id: 7,
-    name: "Amanda Taylor",
-    phone: "(813) 555-0203",
-    promoterName: "Sarah K.",
-    promoterSlug: "sarah",
-    partySize: 1,
-    registeredAt: "2026-07-26T19:14:00-04:00",
-    status: "checked_in",
-    checkedInAt: "2026-07-26T22:38:00-04:00",
-    flagReason: null,
-  },
-  {
-    id: 8,
-    name: "Brian Wilson",
-    phone: "(813) 555-0204",
-    promoterName: "Sarah K.",
-    promoterSlug: "sarah",
-    partySize: 2,
-    registeredAt: "2026-07-26T19:48:00-04:00",
-    status: "flagged",
-    checkedInAt: null,
-    flagReason: "Attempted registration inside restricted venue zone.",
-  },
-
-  {
-    id: 9,
-    name: "Maria Garcia",
-    phone: "(813) 555-0301",
-    promoterName: "James R.",
-    promoterSlug: "james",
-    partySize: 1,
-    registeredAt: "2026-07-26T18:11:00-04:00",
-    status: "checked_in",
-    checkedInAt: "2026-07-26T22:09:00-04:00",
-    flagReason: null,
-  },
-  {
-    id: 10,
-    name: "Nick Torres",
-    phone: "(813) 555-0302",
-    promoterName: "James R.",
-    promoterSlug: "james",
-    partySize: 2,
-    registeredAt: "2026-07-26T18:47:00-04:00",
-    status: "checked_in",
-    checkedInAt: "2026-07-26T22:18:00-04:00",
-    flagReason: null,
-  },
-  {
-    id: 11,
-    name: "Olivia Brooks",
-    phone: "(813) 555-0303",
-    promoterName: "James R.",
-    promoterSlug: "james",
-    partySize: 1,
-    registeredAt: "2026-07-26T19:02:00-04:00",
-    status: "checked_in",
-    checkedInAt: "2026-07-26T22:41:00-04:00",
-    flagReason: null,
-  },
-  {
-    id: 12,
-    name: "Trevor Hall",
-    phone: "(813) 555-0304",
-    promoterName: "James R.",
-    promoterSlug: "james",
-    partySize: 1,
-    registeredAt: "2026-07-26T19:39:00-04:00",
-    status: "flagged",
-    checkedInAt: null,
-    flagReason: "Rejected by restricted-radius rule.",
-  },
-];
+const DEMO_GUESTS: DemoGuest[] = [];
 
 const DEMO_STATS = {
   summary: {
-    totalRegistrations: 12,
-    totalPartySize: 16,
-    checkedIn: 10,
-    notCheckedIn: 2,
-    conversionPercentage: 83.3,
+    totalRegistrations: 0,
+    totalPartySize: 0,
+    checkedIn: 0,
+    notCheckedIn: 0,
+    conversionPercentage: 0,
   },
   promoters: [
     {
       promoterId: 1,
       promoterName: "Mike D.",
       promoterSlug: "mike",
-      registrations: 4,
-      totalPartySize: 5,
-      checkedIn: 4,
+      registrations: 0,
+      totalPartySize: 0,
+      checkedIn: 0,
       notCheckedIn: 0,
       redFlags: 0,
-      conversionPercentage: 100,
+      conversionPercentage: 0,
     },
     {
       promoterId: 2,
       promoterName: "Sarah K.",
       promoterSlug: "sarah",
-      registrations: 4,
-      totalPartySize: 6,
-      checkedIn: 3,
-      notCheckedIn: 1,
-      redFlags: 1,
-      conversionPercentage: 75,
+      registrations: 0,
+      totalPartySize: 0,
+      checkedIn: 0,
+      notCheckedIn: 0,
+      redFlags: 0,
+      conversionPercentage: 0,
     },
     {
       promoterId: 3,
       promoterName: "James R.",
       promoterSlug: "james",
-      registrations: 4,
-      totalPartySize: 5,
-      checkedIn: 3,
-      notCheckedIn: 1,
-      redFlags: 1,
-      conversionPercentage: 75,
+      registrations: 0,
+      totalPartySize: 0,
+      checkedIn: 0,
+      notCheckedIn: 0,
+      redFlags: 0,
+      conversionPercentage: 0,
     },
   ],
 };
@@ -386,21 +239,29 @@ function Shell({
 
 export function LoginPage() {
   const existingSession = getDemoSession();
-  const [username, setUsername] = useState(DEMO_ACCOUNTS[0].username);
+  const [username, setUsername] = useState(LOGIN_ACCOUNTS[0].username);
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
+  const [signingIn, setSigningIn] = useState(false);
 
-  function handleLogin(event: FormEvent) {
+  async function handleLogin(event: FormEvent) {
     event.preventDefault();
     setMessage("");
+    setSigningIn(true);
 
-    const session = loginDemoAccount(username, password);
-    if (!session) {
+    try {
+      const session = await loginDemoAccount(username, password);
+      if (!session) {
+        setMessage("The selected user and password do not match.");
+        return;
+      }
+
+      window.location.assign(landingPath(session));
+    } catch {
       setMessage("The selected user and password do not match.");
-      return;
+    } finally {
+      setSigningIn(false);
     }
-
-    window.location.assign(landingPath(session));
   }
 
   if (existingSession) {
@@ -427,7 +288,7 @@ export function LoginPage() {
                   setMessage("");
                 }}
               >
-                {DEMO_ACCOUNTS.map((account) => (
+                {LOGIN_ACCOUNTS.map((account) => (
                   <option key={account.username} value={account.username}>
                     {account.username}
                   </option>
@@ -446,8 +307,8 @@ export function LoginPage() {
               />
             </label>
 
-            <button className="primary-button full" type="submit">
-              Sign In
+            <button className="primary-button full" type="submit" disabled={signingIn}>
+              {signingIn ? "Signing In..." : "Sign In"}
             </button>
 
             {message && <div className="error-box">{message}</div>}
@@ -874,7 +735,7 @@ export function LocationHelpPage() {
 export function GuestListPage() {
   const [guests, setGuests] = useState<DemoGuest[]>(DEMO_GUESTS);
   const [notice, setNotice] = useState<string | null>(
-    "Showing demo guest-list data until live records are available.",
+    "Loading live guest-list data...",
   );
   const [filter, setFilter] = useState<"all" | "checked_in" | "pending" | "flagged">("all");
   const [search, setSearch] = useState("");
@@ -885,7 +746,7 @@ export function GuestListPage() {
 
       if ("error" in result) {
         setGuests(DEMO_GUESTS);
-        setNotice("Showing demo guest-list data until live records are available.");
+        setNotice("Live guest-list data is temporarily unavailable.");
         return;
       }
 
@@ -894,7 +755,7 @@ export function GuestListPage() {
 
       if (rawGuests.length === 0) {
         setGuests(DEMO_GUESTS);
-        setNotice("Showing demo guest-list data until live records are available.");
+        setNotice(null);
         return;
       }
 
@@ -934,7 +795,7 @@ export function GuestListPage() {
       setNotice(null);
     } catch {
       setGuests(DEMO_GUESTS);
-      setNotice("Showing demo guest-list data until live records are available.");
+      setNotice("Live guest-list data is temporarily unavailable.");
     }
   }, []);
 
@@ -1211,7 +1072,7 @@ function loadLeaflet(): Promise<any> {
   return leafletLoader;
 }
 
-function RegistrationMap({ promoters }: { promoters: any[] }) {
+function RegistrationMap({ promoters, reportingQuery }: { promoters: any[]; reportingQuery: string }) {
   const mapElementId = "registration-coverage-map";
   const [mapData, setMapData] = useState<any>(null);
   const [mapMessage, setMapMessage] = useState("Loading registration map...");
@@ -1220,7 +1081,7 @@ function RegistrationMap({ promoters }: { promoters: any[] }) {
     let cancelled = false;
     let map: any = null;
 
-    void Promise.all([api<any>("/api/registration-map"), loadLeaflet()])
+    void Promise.all([api<any>(`/api/registration-map?${reportingQuery}`), loadLeaflet()])
       .then(([result, L]) => {
         if (cancelled) return;
         if ("error" in result) {
@@ -1271,7 +1132,7 @@ function RegistrationMap({ promoters }: { promoters: any[] }) {
       cancelled = true;
       if (map) map.remove();
     };
-  }, []);
+  }, [reportingQuery]);
 
   return (
     <section className="data-card registration-map-card">
@@ -1333,20 +1194,28 @@ export function StatsPage() {
   const [savingPromoterId, setSavingPromoterId] = useState<number | null>(null);
   const [savedPromoterId, setSavedPromoterId] = useState<number | null>(null);
   const [notice, setNotice] = useState<string | null>(
-    "Showing demo statistics until live data is available.",
+    "Loading live statistics...",
   );
+  const [reportingRange, setReportingRange] = useState<"today" | "week" | "month" | "all">("week");
+  const [reportingDate, setReportingDate] = useState(() => dateInputValue(0));
+  const [reportingLabel, setReportingLabel] = useState("Current week");
+  const reportingQuery = useMemo(() => {
+    const params = new URLSearchParams({ range: reportingRange });
+    if (reportingRange !== "all") params.set("date", reportingDate);
+    return params.toString();
+  }, [reportingDate, reportingRange]);
 
   const loadStats = useCallback(async () => {
     try {
       const [statsResult, analyticsResult, promotersResult] = await Promise.all([
-        api<any>("/api/stats"),
-        api<any>("/api/analytics"),
+        api<any>(`/api/stats?${reportingQuery}`),
+        api<any>(`/api/analytics?${reportingQuery}`),
         api<any>("/api/promoters"),
       ]);
 
       if ("error" in statsResult) {
         setData(DEMO_STATS);
-        setNotice("Showing demo statistics until live data is available.");
+        setNotice("Live statistics are temporarily unavailable.");
         return;
       }
 
@@ -1362,7 +1231,7 @@ export function StatsPage() {
 
       if (!payload?.summary || !Array.isArray(payload?.promoters)) {
         setData(DEMO_STATS);
-        setNotice("Showing demo statistics until live data is available.");
+        setNotice("Live statistics are temporarily unavailable.");
         return;
       }
 
@@ -1404,12 +1273,13 @@ export function StatsPage() {
           ? payload.promoterGeofenceAttempts
           : [],
       );
+      setReportingLabel(String(payload.reporting?.label ?? "Selected period"));
       setNotice(null);
     } catch {
       setData(DEMO_STATS);
-      setNotice("Showing demo statistics until live data is available.");
+      setNotice("Live statistics are temporarily unavailable.");
     }
-  }, []);
+  }, [reportingQuery]);
 
   useEffect(() => {
     void loadStats();
@@ -1424,6 +1294,31 @@ export function StatsPage() {
             <h1>Analytics Dashboard</h1>
           </div>
         </div>
+
+        <section className="reporting-toolbar" aria-label="Analytics date range">
+          <div className="reporting-presets">
+            {([['today', 'Day'], ['week', 'Week'], ['month', 'Month'], ['all', 'All time']] as const).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                className={reportingRange === value ? "is-active" : ""}
+                onClick={() => setReportingRange(value)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <label>
+            View date
+            <input
+              type="date"
+              value={reportingDate}
+              disabled={reportingRange === "all"}
+              onChange={event => setReportingDate(event.target.value)}
+            />
+          </label>
+          <strong>{reportingLabel}</strong>
+        </section>
 
         <section className="venue-strip">
           <article className="venue-info-card">
@@ -1491,7 +1386,7 @@ export function StatsPage() {
           />
         </section>
 
-        <RegistrationMap promoters={data.promoters} />
+        <RegistrationMap promoters={data.promoters} reportingQuery={reportingQuery} />
 
         <section className="data-card promoter-geofence-audit">
           <div className="section-heading">
@@ -1677,7 +1572,7 @@ export function PromotersDashboardPage() {
   const [data, setData] = useState(DEMO_STATS);
   const [guests, setGuests] = useState(DEMO_GUESTS);
   const [notice, setNotice] = useState<string | null>(
-    "Showing demo promoter data until live data is available.",
+    "Loading live promoter data...",
   );
 
   useEffect(() => {
@@ -1744,7 +1639,7 @@ export function PromotersDashboardPage() {
         );
       }
     }).catch(() => {
-      setNotice("Showing demo promoter data until live data is available.");
+      setNotice("Live promoter data is temporarily unavailable.");
     });
   }, []);
 
@@ -1910,6 +1805,9 @@ export function AdminPage() {
   const [savingPromoterId, setSavingPromoterId] = useState<number | null>(null);
   const [savedPromoterId, setSavedPromoterId] = useState<number | null>(null);
   const [promoterMessage, setPromoterMessage] = useState("");
+  const [promoterPasswords, setPromoterPasswords] = useState<Record<number, string>>({});
+  const [savingPasswordId, setSavingPasswordId] = useState<number | null>(null);
+  const [exportingStats, setExportingStats] = useState(false);
   const [eventPromoterId, setEventPromoterId] = useState("1");
   const [eventName, setEventName] = useState("");
   const [eventExpiresOn, setEventExpiresOn] = useState(() => dateInputValue(14));
@@ -1939,6 +1837,7 @@ export function AdminPage() {
     radiusMeters: 457,
     customerCooldownDays: 14,
     geofenceEnabled: true,
+    weeklyResetDay: 1,
   });
 
   const [hours, setHours] = useState(
@@ -1970,6 +1869,7 @@ export function AdminPage() {
         radiusMeters: Number(remote.radiusMeters ?? 457),
         customerCooldownDays: Number(remote.customerCooldownDays ?? 14),
         geofenceEnabled: Boolean(remote.geofenceEnabled ?? true),
+        weeklyResetDay: Number(remote.weeklyResetDay ?? 1),
       });
 
       if (Array.isArray(remote.hours) && remote.hours.length > 0) {
@@ -2021,6 +1921,7 @@ export function AdminPage() {
           conversionPercentage: Number(promoter.conversionPercentage ?? 0),
           passLimit: Number(settings?.pass_limit ?? 25),
           resetDays: Number(settings?.reset_days ?? 1),
+          loginUsername: String(settings?.login_username ?? ""),
           };
         }),
       );
@@ -2085,6 +1986,59 @@ export function AdminPage() {
 
     setMessage("Demo settings saved.");
 
+  }
+
+  async function downloadStats() {
+    if (!adminKey) {
+      setIsError(true);
+      setMessage("Enter the admin configuration key before downloading guest data.");
+      return;
+    }
+    setExportingStats(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/stats-export?range=all", {
+        headers: { "X-Admin-Key": adminKey },
+      });
+      if (!response.ok) {
+        const body = await response.json() as { error?: { message?: string } };
+        throw new Error(body.error?.message || "Stats export failed.");
+      }
+      const blob = await response.blob();
+      const disposition = response.headers.get("Content-Disposition") ?? "";
+      const filename = disposition.match(/filename="([^"]+)"/)?.[1] ?? `scores-guest-list-${dateInputValue(0)}.csv`;
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      link.click();
+      URL.revokeObjectURL(url);
+      setIsError(false);
+      setMessage("Stats CSV downloaded.");
+    } catch (error) {
+      setIsError(true);
+      setMessage(error instanceof Error ? error.message : "Stats export failed.");
+    } finally {
+      setExportingStats(false);
+    }
+  }
+
+  async function savePromoterPassword(promoterId: number) {
+    const password = promoterPasswords[promoterId] ?? "";
+    setSavingPasswordId(promoterId);
+    setPromoterMessage("");
+    const result = await api<any>("/api/promoter-password", {
+      method: "POST",
+      headers: { "X-Admin-Key": adminKey },
+      body: JSON.stringify({ promoterId, password }),
+    });
+    setSavingPasswordId(null);
+    if ("error" in result) {
+      setPromoterMessage(result.error.message);
+      return;
+    }
+    setPromoterPasswords(current => ({ ...current, [promoterId]: "" }));
+    setPromoterMessage(`Password updated for ${String(result.data?.promoter?.login_username ?? "promoter")}.`);
   }
 
   async function generateEventQR(event: FormEvent) {
@@ -2204,6 +2158,9 @@ export function AdminPage() {
               Configure this deployment for any nightclub or venue.
             </p>
           </div>
+          <button className="secondary-button" type="button" onClick={() => void downloadStats()} disabled={exportingStats}>
+            {exportingStats ? "Preparing CSV..." : "Download Stats CSV"}
+          </button>
         </div>
 
         <form className="data-card event-qr-card" onSubmit={generateEventQR}>
@@ -2530,6 +2487,22 @@ export function AdminPage() {
             </label>
 
             <label>
+              Weekly analytics starts
+              <select
+                value={venue.weeklyResetDay}
+                onChange={event => setVenue(current => ({ ...current, weeklyResetDay: Number(event.target.value) }))}
+              >
+                <option value="0">Sunday</option>
+                <option value="1">Monday</option>
+                <option value="2">Tuesday</option>
+                <option value="3">Wednesday</option>
+                <option value="4">Thursday</option>
+                <option value="5">Friday</option>
+                <option value="6">Saturday</option>
+              </select>
+            </label>
+
+            <label>
               Restricted radius, meters
               <input
                 type="number"
@@ -2637,7 +2610,7 @@ export function AdminPage() {
             <div>
               <p className="eyebrow">Promoter overview</p>
               <h2>Promoter Management</h2>
-              <p className="muted">Change a promoter's display name without changing their QR link.</p>
+              <p className="muted">Change display names and rotate promoter login passwords without changing QR links.</p>
             </div>
             <a className="secondary-button compact-button" href="/promoters">
               Open Promoter Dashboard
@@ -2671,6 +2644,7 @@ export function AdminPage() {
                   />
                 </label>
                 <small className="promoter-link-note">QR link: /p/{promoter.promoterSlug}</small>
+                <small className="promoter-link-note">Login: {(promoter as any).loginUsername || "Assigned promoter account"}</small>
                 <button
                   className="secondary-button compact-button promoter-save-button"
                   type="button"
@@ -2706,6 +2680,25 @@ export function AdminPage() {
                       ? "Saved"
                       : "Save Name"}
                 </button>
+                <div className="promoter-password-control">
+                  <input
+                    type="password"
+                    minLength={8}
+                    maxLength={128}
+                    placeholder="New login password"
+                    value={promoterPasswords[promoter.promoterId] ?? ""}
+                    onChange={event => setPromoterPasswords(current => ({ ...current, [promoter.promoterId]: event.target.value }))}
+                    aria-label={`New password for ${promoter.promoterName}`}
+                  />
+                  <button
+                    className="secondary-button compact-button"
+                    type="button"
+                    disabled={savingPasswordId === promoter.promoterId || (promoterPasswords[promoter.promoterId] ?? "").length < 8}
+                    onClick={() => void savePromoterPassword(promoter.promoterId)}
+                  >
+                    {savingPasswordId === promoter.promoterId ? "Updating..." : "Update Password"}
+                  </button>
+                </div>
                 <div className="promoter-stat-row">
                   <span>Registrations</span>
                   <span>{promoter.registrations}</span>

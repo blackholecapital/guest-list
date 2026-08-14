@@ -130,7 +130,7 @@ export function ContestEventPage() {
 
       <section className="contest-event-close">
         <p className="contest-neon-kicker">Ladies… who could use some extra cash? <span aria-hidden="true">👀💋</span></p>
-        <h2>Sign up. Bring your friends.<br />Work the crowd. Take the crown. <span aria-hidden="true">👑</span></h2>
+        <h2>Sign up. Bring your friends.<br />Work the crowd. <span className="contest-crown-line">Take the crown. <span className="contest-crown-icon" aria-hidden="true">👑</span></span></h2>
         <a className="contest-register-cta" href="/contest/register">Enter the contest <span>→</span></a>
         <p className="contest-register-prompt"><span aria-hidden="true">👇</span> Register at the link below! <span aria-hidden="true">👇</span></p>
         <div className="contest-event-meta"><p><span aria-hidden="true">📍</span> Scores Tampa</p><p><span aria-hidden="true">📅</span> Starting {campaignStartLabel(settings)}</p></div>

@@ -1517,13 +1517,39 @@ a.venue-detail:hover {
 
 .promoter-password-control {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   gap: 8px;
   margin: 14px 0 8px;
 }
 
 .promoter-password-control input {
   min-width: 0;
+}
+
+.promoter-password-visibility {
+  min-width: 64px;
+}
+
+.promoter-password-status {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.promoter-password-status.success {
+  color: #8ff0a4;
+  border-color: rgba(40, 167, 69, 0.65);
+  background: rgba(40, 167, 69, 0.12);
+}
+
+.promoter-password-status.error {
+  color: #ff9da7;
+  border-color: rgba(220, 53, 69, 0.65);
+  background: rgba(220, 53, 69, 0.12);
 }
 
 .reporting-toolbar {

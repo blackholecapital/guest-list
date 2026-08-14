@@ -1806,6 +1806,8 @@ export function AdminPage() {
   const [savedPromoterId, setSavedPromoterId] = useState<number | null>(null);
   const [promoterMessage, setPromoterMessage] = useState("");
   const [promoterPasswords, setPromoterPasswords] = useState<Record<number, string>>({});
+  const [visiblePasswordIds, setVisiblePasswordIds] = useState<Record<number, boolean>>({});
+  const [passwordStatus, setPasswordStatus] = useState<Record<number, { type: "success" | "error"; message: string }>>({});
   const [savingPasswordId, setSavingPasswordId] = useState<number | null>(null);
   const [exportingStats, setExportingStats] = useState(false);
   const [eventPromoterId, setEventPromoterId] = useState("1");
@@ -2025,20 +2027,61 @@ export function AdminPage() {
 
   async function savePromoterPassword(promoterId: number) {
     const password = promoterPasswords[promoterId] ?? "";
-    setSavingPasswordId(promoterId);
-    setPromoterMessage("");
-    const result = await api<any>("/api/promoter-password", {
-      method: "POST",
-      headers: { "X-Admin-Key": adminKey },
-      body: JSON.stringify({ promoterId, password }),
-    });
-    setSavingPasswordId(null);
-    if ("error" in result) {
-      setPromoterMessage(result.error.message);
+    if (password.length < 8 || password.length > 128) {
+      setPasswordStatus(current => ({
+        ...current,
+        [promoterId]: { type: "error", message: "Use a password between 8 and 128 characters." },
+      }));
       return;
     }
-    setPromoterPasswords(current => ({ ...current, [promoterId]: "" }));
-    setPromoterMessage(`Password updated for ${String(result.data?.promoter?.login_username ?? "promoter")}.`);
+
+    setSavingPasswordId(promoterId);
+    setPasswordStatus(current => {
+      const next = { ...current };
+      delete next[promoterId];
+      return next;
+    });
+
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 15000);
+
+    try {
+      const result = await api<any>("/api/promoter-password", {
+        method: "POST",
+        body: JSON.stringify({ promoterId, password }),
+        signal: controller.signal,
+      });
+      if ("error" in result) {
+        setPasswordStatus(current => ({
+          ...current,
+          [promoterId]: { type: "error", message: result.error.message },
+        }));
+        return;
+      }
+
+      const loginUsername = String(result.data?.promoter?.login_username ?? "promoter");
+      setVisiblePasswordIds(current => ({ ...current, [promoterId]: true }));
+      setPasswordStatus(current => ({
+        ...current,
+        [promoterId]: {
+          type: "success",
+          message: `Saved in D1. ${loginUsername}'s new login password is active and visible above.`,
+        },
+      }));
+    } catch (error) {
+      const message = error instanceof DOMException && error.name === "AbortError"
+        ? "The save timed out after 15 seconds. Nothing was confirmed; please try again."
+        : error instanceof Error
+          ? `Password was not saved: ${error.message}`
+          : "Password was not saved. Please try again.";
+      setPasswordStatus(current => ({
+        ...current,
+        [promoterId]: { type: "error", message },
+      }));
+    } finally {
+      window.clearTimeout(timeoutId);
+      setSavingPasswordId(null);
+    }
   }
 
   async function generateEventQR(event: FormEvent) {
@@ -2682,14 +2725,32 @@ export function AdminPage() {
                 </button>
                 <div className="promoter-password-control">
                   <input
-                    type="password"
+                    type={visiblePasswordIds[promoter.promoterId] ? "text" : "password"}
                     minLength={8}
                     maxLength={128}
                     placeholder="New login password"
                     value={promoterPasswords[promoter.promoterId] ?? ""}
-                    onChange={event => setPromoterPasswords(current => ({ ...current, [promoter.promoterId]: event.target.value }))}
+                    onChange={event => {
+                      setPromoterPasswords(current => ({ ...current, [promoter.promoterId]: event.target.value }));
+                      setPasswordStatus(current => {
+                        const next = { ...current };
+                        delete next[promoter.promoterId];
+                        return next;
+                      });
+                    }}
                     aria-label={`New password for ${promoter.promoterName}`}
                   />
+                  <button
+                    className="secondary-button compact-button promoter-password-visibility"
+                    type="button"
+                    disabled={!(promoterPasswords[promoter.promoterId] ?? "")}
+                    onClick={() => setVisiblePasswordIds(current => ({
+                      ...current,
+                      [promoter.promoterId]: !current[promoter.promoterId],
+                    }))}
+                  >
+                    {visiblePasswordIds[promoter.promoterId] ? "Hide" : "Show"}
+                  </button>
                   <button
                     className="secondary-button compact-button"
                     type="button"
@@ -2699,6 +2760,15 @@ export function AdminPage() {
                     {savingPasswordId === promoter.promoterId ? "Updating..." : "Update Password"}
                   </button>
                 </div>
+                {passwordStatus[promoter.promoterId] && (
+                  <div
+                    className={`promoter-password-status ${passwordStatus[promoter.promoterId].type}`}
+                    role={passwordStatus[promoter.promoterId].type === "error" ? "alert" : "status"}
+                  >
+                    {passwordStatus[promoter.promoterId].type === "success" ? "✓ " : "⚠ "}
+                    {passwordStatus[promoter.promoterId].message}
+                  </div>
+                )}
                 <div className="promoter-stat-row">
                   <span>Registrations</span>
                   <span>{promoter.registrations}</span>

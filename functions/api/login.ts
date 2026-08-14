@@ -1,4 +1,5 @@
 import { failure, readJson, success, type Env } from "../lib/api";
+import { createAdminSession } from "../lib/admin-session";
 import { constantTimeEqual, hashPassword } from "../lib/passwords";
 
 const staffAccounts = [
@@ -19,6 +20,12 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
       return failure("LOGIN_NOT_CONFIGURED", "This login has not been configured yet.", 503);
     }
     if (constantTimeEqual(password, configuredPassword)) {
+      if (staff.role === "admin") {
+        const session = await createAdminSession(env.DB);
+        return Response.json({ ok: true, data: { session: { username: staff.username, role: staff.role } } }, {
+          headers: { "Cache-Control": "no-store", "Set-Cookie": session.cookie },
+        });
+      }
       return success({ session: { username: staff.username, role: staff.role } });
     }
   }

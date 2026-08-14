@@ -1,7 +1,7 @@
 export const PROMOTER_THEME: Record<string,string> = {
-  mike: "#2563EB",
-  sarah: "#E11D48",
-  james: "#EAB308",
+  blue: "#2563EB",
+  red: "#E11D48",
+  yellow: "#EAB308",
 };
 
 export function promoterColor(slug:string){

@@ -3,6 +3,7 @@ import { hasAdminSession } from "../lib/admin-session";
 import { failure, readJson, success, type Env } from "../lib/api";
 
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
+  let stage = "checking the Admin session";
   try {
     if (!await hasAdminSession(request, env.DB)) {
       return failure("ADMIN_SESSION_REQUIRED", "Your Admin session expired. Log out and sign in again.", 401);
@@ -15,21 +16,37 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
       return failure("VALIDATION_ERROR", "Choose a promoter and use a password between 8 and 128 characters.", 400);
     }
 
+    stage = "securing the new password";
     const salt = createSalt();
     const passwordHash = await hashPassword(password, salt);
-    const updated = await env.DB.prepare(`
+
+    stage = "writing the promoter record";
+    const write = await env.DB.prepare(`
       UPDATE promoters
       SET password_hash = ?, password_salt = ?
       WHERE id = ?
-      RETURNING id, name, slug, login_username
-    `).bind(passwordHash, salt, promoterId).first<any>();
-    if (!updated) return failure("PROMOTER_NOT_FOUND", "Promoter not found.", 404);
+    `).bind(passwordHash, salt, promoterId).run();
+    if (!write.success || Number(write.meta.changes ?? 0) !== 1) {
+      return failure("PROMOTER_NOT_FOUND", "Promoter not found; no password was changed.", 404);
+    }
+
+    stage = "verifying the saved promoter record";
+    const updated = await env.DB.prepare(`
+      SELECT id, name, slug, login_username, password_hash, password_salt
+      FROM promoters
+      WHERE id = ?
+      LIMIT 1
+    `).bind(promoterId).first<any>();
+    if (!updated || updated.password_hash !== passwordHash || updated.password_salt !== salt) {
+      throw new Error("D1 did not return the saved credential values");
+    }
+
     return success({ promoter: updated, saved: true });
   } catch (error) {
-    console.error("Promoter password update failed", error);
+    console.error(`Promoter password update failed while ${stage}`, error);
     return failure(
       "PASSWORD_UPDATE_FAILED",
-      "The password could not be saved. Confirm the latest D1 migrations are applied, then try again.",
+      `The password could not be saved while ${stage}. No successful save was confirmed.`,
       500,
     );
   }

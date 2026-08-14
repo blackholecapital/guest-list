@@ -10,6 +10,20 @@ async function tokenHash(token: string) {
   return bytesToHex(new Uint8Array(digest));
 }
 
+async function ensureAdminSessionStore(db: D1Database) {
+  await db.prepare(`
+    CREATE TABLE IF NOT EXISTS admin_sessions (
+      token_hash TEXT PRIMARY KEY,
+      expires_at TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
+  await db.prepare(`
+    CREATE INDEX IF NOT EXISTS idx_admin_sessions_expires_at
+    ON admin_sessions(expires_at)
+  `).run();
+}
+
 function cookieValue(request: Request) {
   const cookies = request.headers.get("Cookie") || "";
   for (const item of cookies.split(";")) {
@@ -20,6 +34,7 @@ function cookieValue(request: Request) {
 }
 
 export async function createAdminSession(db: D1Database) {
+  await ensureAdminSessionStore(db);
   const token = crypto.randomUUID() + crypto.randomUUID();
   const hash = await tokenHash(token);
   const expiresAt = new Date(Date.now() + SESSION_SECONDS * 1000)
@@ -35,6 +50,7 @@ export async function createAdminSession(db: D1Database) {
 }
 
 export async function hasAdminSession(request: Request, db: D1Database) {
+  await ensureAdminSessionStore(db);
   const token = cookieValue(request);
   if (!token) return false;
   const session = await db.prepare(`
@@ -47,6 +63,7 @@ export async function hasAdminSession(request: Request, db: D1Database) {
 }
 
 export async function revokeAdminSession(request: Request, db: D1Database) {
+  await ensureAdminSessionStore(db);
   const token = cookieValue(request);
   if (token) await db.prepare(`DELETE FROM admin_sessions WHERE token_hash = ?`).bind(await tokenHash(token)).run();
   return `${COOKIE_NAME}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Strict`;

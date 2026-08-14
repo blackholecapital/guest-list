@@ -17,8 +17,16 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     }
 
     stage = "securing the new password";
+    const pepper = env.PROMOTER_PASSWORD_PEPPER?.trim() ?? "";
+    if (pepper.length < 32) {
+      return failure(
+        "PASSWORD_SECURITY_NOT_CONFIGURED",
+        "Promoter password security is not configured. Set PROMOTER_PASSWORD_PEPPER in Cloudflare Pages.",
+        503,
+      );
+    }
     const salt = createSalt();
-    const passwordHash = await hashPassword(password, salt);
+    const passwordHash = await hashPassword(password, salt, pepper);
 
     stage = "writing the promoter record";
     const write = await env.DB.prepare(`

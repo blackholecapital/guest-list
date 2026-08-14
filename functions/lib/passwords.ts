@@ -1,4 +1,5 @@
 const encoder = new TextEncoder();
+const CURRENT_HASH_PREFIX = "v3-hmac-sha256$";
 
 function bytesToBase64(bytes: Uint8Array): string {
   let value = "";
@@ -6,30 +7,34 @@ function bytesToBase64(bytes: Uint8Array): string {
   return btoa(value);
 }
 
-function base64ToBytes(value: string): Uint8Array {
-  const decoded = atob(value);
-  return Uint8Array.from(decoded, character => character.charCodeAt(0));
-}
-
 export function createSalt(): string {
   return bytesToBase64(crypto.getRandomValues(new Uint8Array(16)));
 }
 
-export async function hashPassword(password: string, salt: string): Promise<string> {
+export async function hashPassword(password: string, salt: string, pepper: string): Promise<string> {
   const key = await crypto.subtle.importKey(
     "raw",
-    encoder.encode(password),
-    "PBKDF2",
+    encoder.encode(pepper),
+    { name: "HMAC", hash: "SHA-256" },
     false,
-    ["deriveBits"],
+    ["sign"],
   );
-  const bits = await crypto.subtle.deriveBits({
-    name: "PBKDF2",
-    hash: "SHA-256",
-    salt: base64ToBytes(salt),
-    iterations: 120_000,
-  }, key, 256);
-  return bytesToBase64(new Uint8Array(bits));
+  const signature = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    encoder.encode(`${salt}\u0000${password}`),
+  );
+  return `${CURRENT_HASH_PREFIX}${bytesToBase64(new Uint8Array(signature))}`;
+}
+
+export async function verifyPassword(
+  password: string,
+  salt: string,
+  storedHash: string,
+  pepper: string,
+): Promise<boolean> {
+  if (!storedHash.startsWith(CURRENT_HASH_PREFIX)) return false;
+  return constantTimeEqual(await hashPassword(password, salt, pepper), storedHash);
 }
 
 export function constantTimeEqual(left: string, right: string): boolean {

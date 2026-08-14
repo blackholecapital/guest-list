@@ -17,6 +17,7 @@ interface VenueRow {
   hours_json: string | null;
   customer_cooldown_days: number;
   geofence_enabled: number;
+  weekly_reset_day: number;
 }
 
 interface PromoterRow {
@@ -24,6 +25,8 @@ interface PromoterRow {
   slug: string;
   name: string;
   active: number;
+  pass_limit: number;
+  reset_days: number;
 }
 
 interface HourRow {
@@ -76,7 +79,8 @@ async function getVenue(env: Env): Promise<VenueRow | null> {
         radius_meters,
         hours_json,
         customer_cooldown_days,
-        geofence_enabled
+        geofence_enabled,
+        weekly_reset_day
       FROM venues
       ORDER BY id ASC
       LIMIT 1
@@ -115,7 +119,10 @@ export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
         phone: venue.phone ?? "",
         latitude: venue.latitude,
         longitude: venue.longitude,
-        radiusMeters: venue.radius_meters,        customerCooldownDays: venue.customer_cooldown_days ?? 14,
+        radiusMeters: venue.radius_meters,
+        customerCooldownDays: venue.customer_cooldown_days ?? 14,
+        geofenceEnabled: venue.geofence_enabled === 1,
+        weeklyResetDay: venue.weekly_reset_day ?? 1,
         hours: parseHours(venue.hours_json),
       },
       promoters: (promoters.results ?? []).map((promoter) => ({
@@ -179,6 +186,9 @@ export const onRequestPost: PagesFunction<Env> = async ({
   const latitude = Number(body.latitude);
   const longitude = Number(body.longitude);
   const radiusMeters = Number(body.radiusMeters);
+  const customerCooldownDays = Number(body.customerCooldownDays);
+  const geofenceEnabled = body.geofenceEnabled === true;
+  const weeklyResetDay = Number(body.weeklyResetDay);
 
   const hours = Array.isArray(body.hours)
     ? body.hours
@@ -195,11 +205,17 @@ export const onRequestPost: PagesFunction<Env> = async ({
     longitude > 180 ||
     !Number.isInteger(radiusMeters) ||
     radiusMeters < 50 ||
-    radiusMeters > 10000
+    radiusMeters > 10000 ||
+    !Number.isInteger(customerCooldownDays) ||
+    customerCooldownDays < 0 ||
+    customerCooldownDays > 90 ||
+    !Number.isInteger(weeklyResetDay) ||
+    weeklyResetDay < 0 ||
+    weeklyResetDay > 6
   ) {
     return failure(
       "VALIDATION_ERROR",
-      "Venue name, address, coordinates, and radius are required.",
+      "Check the venue details, reporting week, cooldown, and geofence settings.",
       400,
     );
   }
@@ -225,7 +241,10 @@ export const onRequestPost: PagesFunction<Env> = async ({
           latitude = ?,
           longitude = ?,
           radius_meters = ?,
-          hours_json = ?
+          hours_json = ?,
+          customer_cooldown_days = ?,
+          geofence_enabled = ?,
+          weekly_reset_day = ?
         WHERE id = ?
       `)
       .bind(
@@ -236,6 +255,9 @@ export const onRequestPost: PagesFunction<Env> = async ({
         longitude,
         radiusMeters,
         JSON.stringify(hours),
+        customerCooldownDays,
+        geofenceEnabled ? 1 : 0,
+        weeklyResetDay,
         venue.id,
       )
       .run();

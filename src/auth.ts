@@ -6,30 +6,23 @@ export type DemoSession = {
   promoterSlug?: "mike" | "james" | "sarah";
 };
 
-type DemoAccount = DemoSession & {
-  password: string;
-};
-
 const SESSION_KEY = "guest-list-demo-session";
 
-export const DEMO_ACCOUNTS: DemoAccount[] = [
-  { username: "Door", password: "Door111", role: "door" },
-  { username: "Admin", password: "admin222", role: "admin" },
+export const LOGIN_ACCOUNTS: DemoSession[] = [
+  { username: "Door", role: "door" },
+  { username: "Admin", role: "admin" },
   {
     username: "Blue",
-    password: "Blue333",
     role: "promoter",
     promoterSlug: "mike",
   },
   {
     username: "Yellow",
-    password: "Yellow444",
     role: "promoter",
     promoterSlug: "james",
   },
   {
     username: "Red",
-    password: "Red555",
     role: "promoter",
     promoterSlug: "sarah",
   },
@@ -41,7 +34,7 @@ export function getDemoSession(): DemoSession | null {
     if (!stored) return null;
 
     const parsed = JSON.parse(stored) as DemoSession;
-    return DEMO_ACCOUNTS.some(
+    return LOGIN_ACCOUNTS.some(
       (account) =>
         account.username === parsed.username &&
         account.role === parsed.role &&
@@ -54,23 +47,18 @@ export function getDemoSession(): DemoSession | null {
   }
 }
 
-export function loginDemoAccount(
+export async function loginDemoAccount(
   username: string,
   password: string,
-): DemoSession | null {
-  const account = DEMO_ACCOUNTS.find(
-    (candidate) =>
-      candidate.username.toLowerCase() === username.toLowerCase() &&
-      candidate.password === password,
-  );
-
-  if (!account) return null;
-
-  const session: DemoSession = {
-    username: account.username,
-    role: account.role,
-    promoterSlug: account.promoterSlug,
-  };
+): Promise<DemoSession | null> {
+  const response = await fetch("/api/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password }),
+  });
+  const result = await response.json() as { ok: boolean; data?: { session?: DemoSession } };
+  const session = result.data?.session;
+  if (!response.ok || !result.ok || !session) return null;
 
   window.sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
   return session;

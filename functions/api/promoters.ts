@@ -31,6 +31,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
         p.passes_used,
         MAX(p.pass_limit - p.passes_used, 0) AS passes_remaining,
         p.last_reset_at,
+        p.login_username,
         (SELECT COUNT(*) FROM qr_codes q WHERE q.promoter_id = p.id) AS qr_generated,
         (SELECT COALESCE(SUM(q.used_count), 0) FROM qr_codes q WHERE q.promoter_id = p.id) AS qr_scanned
       FROM promoters p
@@ -81,7 +82,8 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
         reset_days,
         passes_used,
         MAX(pass_limit - passes_used, 0) AS passes_remaining,
-        last_reset_at
+        last_reset_at,
+        login_username
     `).bind(name, passLimit, resetDays, passLimit, id).first();
 
     if (!updated) {

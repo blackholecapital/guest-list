@@ -1,6 +1,5 @@
 export interface Env {
   DB: D1Database;
-  ADMIN_CONFIG_KEY?: string;
   ADMIN_LOGIN_PASSWORD?: string;
   DOOR_LOGIN_PASSWORD?: string;
   PROMOTER_PASSWORD_PEPPER?: string;

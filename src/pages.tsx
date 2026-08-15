@@ -1801,11 +1801,6 @@ export function AdminPage() {
   const [demoDuplicate,setDemoDuplicate]=useState(true);
   const [demoSms,setDemoSms]=useState(true);
 
-
-  const [adminKey, setAdminKey] = useState(
-    () => window.sessionStorage.getItem("guest-list-admin-key") ?? "",
-  );
-
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
@@ -1999,17 +1994,10 @@ export function AdminPage() {
   }
 
   async function downloadStats() {
-    if (!adminKey) {
-      setIsError(true);
-      setMessage("Enter the admin configuration key before downloading guest data.");
-      return;
-    }
     setExportingStats(true);
     setMessage("");
     try {
-      const response = await fetch("/api/stats-export?range=all", {
-        headers: { "X-Admin-Key": adminKey },
-      });
+      const response = await fetch("/api/stats-export?range=all");
       if (!response.ok) {
         const body = await response.json() as { error?: { message?: string } };
         throw new Error(body.error?.message || "Stats export failed.");
@@ -2163,18 +2151,9 @@ export function AdminPage() {
     setMessage("");
     setIsError(false);
 
-    window.sessionStorage.setItem(
-      "guest-list-admin-key",
-      adminKey,
-    );
-
     try {
       const result = await api<any>("/api/config", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Admin-Key": adminKey,
-        },
         body: JSON.stringify({
           ...venue,
           hours,
@@ -2567,17 +2546,6 @@ export function AdminPage() {
               />
             </label>
 
-            <label>
-              Admin configuration key
-              <input
-                type="password"
-                value={adminKey}
-                onChange={(event) =>
-                  setAdminKey(event.target.value)
-                }
-                required
-              />
-            </label>
           </div>
 
           <div className="admin-form-actions">

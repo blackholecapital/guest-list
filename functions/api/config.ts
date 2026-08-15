@@ -4,6 +4,7 @@ import {
   success,
   type Env,
 } from "../lib/api";
+import { hasAdminSession } from "../lib/admin-session";
 
 interface VenueRow {
   id: number;
@@ -150,16 +151,10 @@ export const onRequestPost: PagesFunction<Env> = async ({
   request,
   env,
 }) => {
-  const suppliedKey = request.headers.get("X-Admin-Key");
-
-  if (
-    !env.ADMIN_CONFIG_KEY ||
-    !suppliedKey ||
-    suppliedKey !== env.ADMIN_CONFIG_KEY
-  ) {
+  if (!await hasAdminSession(request, env.DB)) {
     return failure(
-      "ADMIN_KEY_REQUIRED",
-      "A valid admin configuration key is required.",
+      "ADMIN_SESSION_REQUIRED",
+      "Your Admin session expired. Log out and sign in again.",
       401,
     );
   }

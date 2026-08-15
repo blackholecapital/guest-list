@@ -1,4 +1,5 @@
 import { failure, type Env } from "../lib/api";
+import { hasAdminSession } from "../lib/admin-session";
 import { reportingWindow, sqlDateWindow } from "../lib/reporting";
 
 function csv(value: unknown): string {
@@ -7,9 +8,8 @@ function csv(value: unknown): string {
 }
 
 export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
-  const suppliedKey = request.headers.get("X-Admin-Key");
-  if (!env.ADMIN_CONFIG_KEY || !suppliedKey || suppliedKey !== env.ADMIN_CONFIG_KEY) {
-    return failure("ADMIN_KEY_REQUIRED", "A valid admin configuration key is required to export guest data.", 401);
+  if (!await hasAdminSession(request, env.DB)) {
+    return failure("ADMIN_SESSION_REQUIRED", "Your Admin session expired. Log out and sign in again.", 401);
   }
 
   const reporting = await reportingWindow(request, env);

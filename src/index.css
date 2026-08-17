@@ -440,6 +440,12 @@ nav a:hover {
   font-size: clamp(38px, 7vw, 58px);
 }
 
+.location-help-card .secondary-button.full {
+  display: block;
+  width: 100%;
+  margin-top: 22px;
+}
+
 .location-help-confirmation {
   text-align: center;
 }
@@ -1818,6 +1824,84 @@ header nav,
   color: white;
 }
 
+.feature-switch {
+  width: 100%;
+  min-height: 92px;
+  padding: 18px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #0c0c0c;
+  color: white;
+  text-align: left;
+}
+
+.feature-switch:hover,
+.feature-switch:focus-visible {
+  border-color: rgba(214, 174, 88, 0.7);
+}
+
+.feature-switch.is-on {
+  border-color: rgba(40, 167, 69, 0.6);
+  background: rgba(40, 167, 69, 0.08);
+}
+
+.feature-switch-copy {
+  display: grid;
+  gap: 5px;
+}
+
+.feature-switch-copy strong {
+  font-size: 16px;
+}
+
+.feature-switch-copy small {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.feature-switch-control {
+  width: 54px;
+  height: 30px;
+  padding: 3px;
+  display: flex;
+  align-items: center;
+  border-radius: 999px;
+  background: #3a3a3a;
+  transition: background 0.2s ease;
+}
+
+.feature-switch-knob {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  transition: transform 0.2s ease;
+}
+
+.feature-switch.is-on .feature-switch-control {
+  background: var(--green);
+}
+
+.feature-switch.is-on .feature-switch-knob {
+  transform: translateX(24px);
+}
+
+.feature-switch-status {
+  min-width: 32px;
+  color: var(--muted);
+  font-weight: 900;
+  text-align: center;
+}
+
+.feature-switch.is-on .feature-switch-status {
+  color: #9ef3b1;
+}
+
 .promoter-name-field {
   display: grid;
   gap: 7px;
@@ -2146,6 +2230,14 @@ header nav,
 
   .admin-form-actions button {
     width: 100%;
+  }
+
+  .feature-switch {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .feature-switch-status {
+    display: none;
   }
 
   .hours-editor-row {

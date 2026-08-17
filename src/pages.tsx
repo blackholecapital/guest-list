@@ -404,6 +404,7 @@ export function PromoterPage({
     "idle" | "locating" | "submitting" | "success" | "error"
   >("idle");
   const [message, setMessage] = useState("");
+  const [locationAssistanceEnabled, setLocationAssistanceEnabled] = useState(false);
   const helpUrl = `/location-help?promoter=${encodeURIComponent(promoterSlug)}${
     qrToken ? `&token=${encodeURIComponent(qrToken)}` : ""
   }`;
@@ -423,6 +424,19 @@ export function PromoterPage({
       }
     });
   }, [promoterSlug]);
+
+  useEffect(() => {
+    void api<any>("/api/config").then((result) => {
+      if ("error" in result) {
+        setLocationAssistanceEnabled(false);
+        return;
+      }
+
+      setLocationAssistanceEnabled(
+        result.data?.venue?.locationAssistanceEnabled === true,
+      );
+    });
+  }, []);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -579,9 +593,11 @@ export function PromoterPage({
                   <p>
                     Your phone's Location Services must be enabled to use this function.
                   </p>
-                  <a className="location-help-link" href={helpUrl}>
-                    Having location problems? Click here.
-                  </a>
+                  {locationAssistanceEnabled && (
+                    <a className="location-help-link" href={helpUrl}>
+                      Having location problems? Click here.
+                    </a>
+                  )}
                 </div>
               </div>
 
@@ -681,6 +697,11 @@ export function LocationHelpPage() {
   const params = new URLSearchParams(window.location.search);
   const promoterSlug = params.get("promoter")?.trim().toLowerCase() ?? "";
   const qrToken = params.get("token")?.trim() ?? "";
+  const guestListUrl = qrToken
+    ? `/join/${encodeURIComponent(qrToken)}`
+    : promoterSlug
+      ? `/p/${encodeURIComponent(promoterSlug)}`
+      : "/";
   const [promoterName, setPromoterName] = useState(promoterSlug || "your promoter");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -688,6 +709,7 @@ export function LocationHelpPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [confirmation, setConfirmation] = useState<any>(null);
+  const [availability, setAvailability] = useState<"loading" | "enabled" | "disabled">("loading");
 
   useEffect(() => {
     if (!promoterSlug) return;
@@ -700,8 +722,29 @@ export function LocationHelpPage() {
     });
   }, [promoterSlug]);
 
+  useEffect(() => {
+    void api<any>("/api/config").then((result) => {
+      if ("error" in result) {
+        setAvailability("disabled");
+        return;
+      }
+
+      setAvailability(
+        result.data?.venue?.locationAssistanceEnabled === true
+          ? "enabled"
+          : "disabled",
+      );
+    });
+  }, []);
+
   async function submitLocationHelp(event: FormEvent) {
     event.preventDefault();
+
+    if (availability !== "enabled") {
+      setError("Location assistance is currently turned off.");
+      return;
+    }
+
     setError("");
     setSubmitting(true);
 
@@ -735,6 +778,31 @@ export function LocationHelpPage() {
             <p className="muted">
               Show this screen or the confirmation text to the door staff.
             </p>
+          </section>
+        </main>
+      </Shell>
+    );
+  }
+
+  if (availability !== "enabled") {
+    const isLoading = availability === "loading";
+
+    return (
+      <Shell compact>
+        <main className="page narrow centered location-help-page">
+          <section className="hero-card location-help-card">
+            <p className="eyebrow">Guest list assistance</p>
+            <h1>{isLoading ? "Checking availability..." : "Location assistance is off."}</h1>
+            <p className="muted">
+              {isLoading
+                ? "Please wait while we check the venue setting."
+                : "The venue has temporarily disabled location-service exceptions."}
+            </p>
+            {!isLoading && promoterSlug && (
+              <a className="secondary-button full" href={guestListUrl}>
+                Return to Guest List
+              </a>
+            )}
           </section>
         </main>
       </Shell>
@@ -1864,6 +1932,11 @@ export function AdminPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
+  const [savingLocationAssistance, setSavingLocationAssistance] = useState(false);
+  const [locationAssistanceMessage, setLocationAssistanceMessage] = useState("");
+  const [locationAssistanceError, setLocationAssistanceError] = useState(false);
+  const [venueConfigLoaded, setVenueConfigLoaded] = useState(false);
+  const [venueConfigLoadFailed, setVenueConfigLoadFailed] = useState(false);
   const [promoterStats, setPromoterStats] = useState(DEMO_STATS.promoters);
   const [savingPromoterId, setSavingPromoterId] = useState<number | null>(null);
   const [savedPromoterId, setSavedPromoterId] = useState<number | null>(null);
@@ -1902,6 +1975,7 @@ export function AdminPage() {
     radiusMeters: 457,
     customerCooldownDays: 14,
     geofenceEnabled: true,
+    locationAssistanceEnabled: false,
     weeklyResetDay: 1,
   });
 
@@ -1916,6 +1990,11 @@ export function AdminPage() {
   useEffect(() => {
     void api<any>("/api/config").then((result) => {
       if ("error" in result) {
+        setVenueConfigLoadFailed(true);
+        setLocationAssistanceError(true);
+        setLocationAssistanceMessage(
+          "Venue settings could not be loaded. Apply the latest D1 migration and refresh this page.",
+        );
         return;
       }
 
@@ -1934,8 +2013,11 @@ export function AdminPage() {
         radiusMeters: Number(remote.radiusMeters ?? 457),
         customerCooldownDays: Number(remote.customerCooldownDays ?? 14),
         geofenceEnabled: Boolean(remote.geofenceEnabled ?? true),
+        locationAssistanceEnabled: Boolean(remote.locationAssistanceEnabled ?? false),
         weeklyResetDay: Number(remote.weeklyResetDay ?? 1),
       });
+      setVenueConfigLoaded(true);
+      setVenueConfigLoadFailed(false);
 
       if (Array.isArray(remote.hours) && remote.hours.length > 0) {
         setHours(remote.hours);
@@ -2219,6 +2301,7 @@ export function AdminPage() {
           hours,
           customerCooldownDays: venue.customerCooldownDays,
           geofenceEnabled: venue.geofenceEnabled,
+          locationAssistanceEnabled: venue.locationAssistanceEnabled,
         }),
       });
 
@@ -2234,6 +2317,40 @@ export function AdminPage() {
       setMessage("Venue configuration could not be saved.");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function toggleLocationAssistance() {
+    const enabled = !venue.locationAssistanceEnabled;
+
+    setSavingLocationAssistance(true);
+    setLocationAssistanceMessage("");
+    setLocationAssistanceError(false);
+
+    try {
+      const result = await api<any>("/api/location-assistance", {
+        method: "POST",
+        body: JSON.stringify({ enabled }),
+      });
+
+      if ("error" in result) {
+        setLocationAssistanceError(true);
+        setLocationAssistanceMessage(result.error.message);
+        return;
+      }
+
+      setVenue((current) => ({
+        ...current,
+        locationAssistanceEnabled: enabled,
+      }));
+      setLocationAssistanceMessage(
+        `Location Assistance is now ${enabled ? "ON" : "OFF"} for every promoter link.`,
+      );
+    } catch {
+      setLocationAssistanceError(true);
+      setLocationAssistanceMessage("Location Assistance could not be updated.");
+    } finally {
+      setSavingLocationAssistance(false);
     }
   }
 
@@ -2575,6 +2692,49 @@ export function AdminPage() {
                 <option value="off">Disabled</option>
               </select>
             </label>
+
+            <button
+              type="button"
+              role="switch"
+              aria-checked={venue.locationAssistanceEnabled}
+              disabled={savingLocationAssistance || !venueConfigLoaded}
+              className={`feature-switch full-field ${
+                venue.locationAssistanceEnabled ? "is-on" : "is-off"
+              }`}
+              onClick={() => void toggleLocationAssistance()}
+            >
+              <span className="feature-switch-copy">
+                <strong>Location Assistance</strong>
+                <small>
+                  {venue.locationAssistanceEnabled
+                    ? "Enabled globally. Guests who cannot share location may use the exception form."
+                    : "Disabled globally. The exception link and form are hidden from guests."}
+                </small>
+              </span>
+              <span className="feature-switch-control" aria-hidden="true">
+                <span className="feature-switch-knob" />
+              </span>
+              <span className="feature-switch-status">
+                {venueConfigLoadFailed
+                  ? "Unavailable"
+                  : !venueConfigLoaded
+                  ? "Loading"
+                  : savingLocationAssistance
+                  ? "Saving"
+                  : venue.locationAssistanceEnabled
+                    ? "On"
+                    : "Off"}
+              </span>
+            </button>
+
+            {locationAssistanceMessage && (
+              <div
+                className={`${locationAssistanceError ? "error-box" : "success-box"} full-field`}
+                role="status"
+              >
+                {locationAssistanceMessage}
+              </div>
+            )}
 
             <label>
               Weekly analytics starts

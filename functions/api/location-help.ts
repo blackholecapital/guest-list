@@ -24,22 +24,15 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   }
 
   try {
-    const demo = await env.DB.prepare(`
-      SELECT unlimited_joins, bypass_duplicates
-      FROM demo_settings
-      WHERE id = 1
-    `).first<{ unlimited_joins: number; bypass_duplicates: number }>();
-
-    if (demo?.unlimited_joins !== 1) {
-      return failure(
-        "LOCATION_HELP_DISABLED",
-        "Location assistance is only available during beta testing.",
-        403,
-      );
-    }
-
     const promoter = await env.DB.prepare(`
-      SELECT p.id, p.venue_id, p.name, p.slug, p.active, v.name AS venue_name
+      SELECT
+        p.id,
+        p.venue_id,
+        p.name,
+        p.slug,
+        p.active,
+        v.name AS venue_name,
+        v.location_assistance_enabled
       FROM promoters p
       JOIN venues v ON v.id = p.venue_id
       WHERE p.slug = ? AND v.slug = 'scores-tampa'
@@ -49,6 +42,20 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     if (!promoter || promoter.active !== 1) {
       return failure("PROMOTER_NOT_FOUND", "This promoter link is not active.", 404);
     }
+
+    if (promoter.location_assistance_enabled !== 1) {
+      return failure(
+        "LOCATION_HELP_DISABLED",
+        "Location assistance is currently turned off.",
+        403,
+      );
+    }
+
+    const demo = await env.DB.prepare(`
+      SELECT bypass_duplicates
+      FROM demo_settings
+      WHERE id = 1
+    `).first<{ bypass_duplicates: number }>();
 
     if (qrToken) {
       const qr = await env.DB.prepare(`
@@ -73,7 +80,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
       LIMIT 1
     `).bind(promoter.venue_id, phone, date).first<{ id: number }>();
 
-    if (existing && demo.bypass_duplicates !== 1) {
+    if (existing && demo?.bypass_duplicates !== 1) {
       return failure("ALREADY_REGISTERED", "This phone number is already on tonight's list.", 409);
     }
     const confirmationCode = `LOC-${crypto.randomUUID().slice(0, 6).toUpperCase()}`;

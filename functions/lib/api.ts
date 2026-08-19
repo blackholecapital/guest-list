@@ -64,6 +64,19 @@ export function normalizePhone(value: string): string {
   return value.replace(/\D/g, "");
 }
 
+export function phoneNumbersMatch(left: string, right: string): boolean {
+  const canonical = (value: string) => {
+    const digits = normalizePhone(value);
+    return digits.length === 11 && digits.startsWith("1")
+      ? digits.slice(1)
+      : digits;
+  };
+
+  const leftPhone = canonical(left);
+  const rightPhone = canonical(right);
+  return Boolean(leftPhone) && leftPhone === rightPhone;
+}
+
 export function haversineMeters(
   latitude1: number,
   longitude1: number,

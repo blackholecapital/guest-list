@@ -1,4 +1,4 @@
-import { failure, normalizePhone, readJson, success, type Env } from "../lib/api";
+import { failure, normalizePhone, phoneNumbersMatch, readJson, success, type Env } from "../lib/api";
 
 function eventDate(): string {
   return new Intl.DateTimeFormat("en-CA", {
@@ -52,10 +52,14 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     }
 
     const demo = await env.DB.prepare(`
-      SELECT bypass_duplicates
+      SELECT test_phone, bypass_duplicates
       FROM demo_settings
       WHERE id = 1
-    `).first<{ bypass_duplicates: number }>();
+    `).first<{ test_phone: string | null; bypass_duplicates: number }>();
+
+    const testPhone = String(demo?.test_phone ?? "");
+    const isTester = phoneNumbersMatch(phone, testPhone);
+    const duplicateProtectionDisabled = demo?.bypass_duplicates === 1;
 
     if (qrToken) {
       const qr = await env.DB.prepare(`
@@ -80,7 +84,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
       LIMIT 1
     `).bind(promoter.venue_id, phone, date).first<{ id: number }>();
 
-    if (existing && demo?.bypass_duplicates !== 1) {
+    if (existing && !isTester && !duplicateProtectionDisabled) {
       return failure("ALREADY_REGISTERED", "This phone number is already on tonight's list.", 409);
     }
     const confirmationCode = `LOC-${crypto.randomUUID().slice(0, 6).toUpperCase()}`;

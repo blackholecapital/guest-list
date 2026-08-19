@@ -2,6 +2,7 @@ import {
   failure,
   haversineMeters,
   normalizePhone,
+  phoneNumbersMatch,
   readJson,
   success,
   type Env,
@@ -14,6 +15,12 @@ interface PromoterRow {
   slug: string;
   name: string;
   active: number;
+}
+
+interface DemoSettingsRow {
+  test_phone: string | null;
+  bypass_duplicates: number;
+  always_send_sms: number;
 }
 
 interface CheckInBody {
@@ -124,14 +131,14 @@ export const onRequestPost: PagesFunction<Env> = async ({
 
   try {
     const demo = await env.DB.prepare(`
-      SELECT *
+      SELECT test_phone, bypass_duplicates, always_send_sms
       FROM demo_settings
       WHERE id=1
-    `).first<any>();
+    `).first<DemoSettingsRow>();
 
-    const isTester =
-      demo &&
-      body.phone === normalizePhone(String(demo.test_phone ?? ""));
+    const testPhone = String(demo?.test_phone ?? "");
+    const isTester = phoneNumbersMatch(body.phone, testPhone);
+    const duplicateProtectionDisabled = demo?.bypass_duplicates === 1;
 
     if (body.qrToken) {
       const qr = await env.DB
@@ -262,7 +269,8 @@ export const onRequestPost: PagesFunction<Env> = async ({
 
     if (
       existingGuest &&
-      !(isTester && demo?.bypass_duplicates)
+      !isTester &&
+      !duplicateProtectionDisabled
     ) {
       return failure(
         "ALREADY_REGISTERED",

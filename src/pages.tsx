@@ -2117,22 +2117,38 @@ export function AdminPage() {
   }
 
   async function saveDemoSettings() {
+    setMessage("");
+    setIsError(false);
+    try {
+      const result = await api<any>("/api/demo-settings",{
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json"
+        },
+        body:JSON.stringify({
+          test_phone:demoPhone,
+          unlimited_joins:demoUnlimited,
+          bypass_duplicates:demoDuplicate,
+          always_send_sms:demoSms
+        })
+      });
 
-    await api("/api/demo-settings",{
-      method:"POST",
-      headers:{
-        "Content-Type":"application/json"
-      },
-      body:JSON.stringify({
-        test_phone:demoPhone,
-        unlimited_joins:demoUnlimited,
-        bypass_duplicates:demoDuplicate,
-        always_send_sms:demoSms
-      })
-    });
+      if ("error" in result) {
+        setIsError(true);
+        setMessage(result.error.message);
+        return;
+      }
 
-    setMessage("Demo settings saved.");
-
+      setDemoPhone(String(result.data.test_phone ?? ""));
+      setMessage(
+        result.data.test_phone
+          ? `Demo settings saved. ${result.data.test_phone} can register repeatedly.`
+          : "Demo settings saved.",
+      );
+    } catch (error) {
+      setIsError(true);
+      setMessage(error instanceof Error ? error.message : "Demo settings could not be saved.");
+    }
   }
 
   async function downloadStats() {
@@ -2544,6 +2560,7 @@ export function AdminPage() {
                 value={demoPhone}
                 onChange={(e)=>setDemoPhone(e.target.value)}
               />
+              <small>This number can register repeatedly across every promoter color.</small>
             </label>
 
             <label>
@@ -2561,7 +2578,7 @@ export function AdminPage() {
                 checked={demoDuplicate}
                 onChange={(e)=>setDemoDuplicate(e.target.checked)}
               />
-              Ignore Duplicate Protection
+              Ignore Duplicate Protection Globally
             </label>
 
             <label>

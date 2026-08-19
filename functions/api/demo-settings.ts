@@ -1,4 +1,4 @@
-import { normalizePhone, success, type Env } from "../lib/api";
+import { failure, normalizePhone, readJson, success, type Env } from "../lib/api";
 
 export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
   const row = await env.DB
@@ -12,24 +12,46 @@ export const onRequestPost: PagesFunction<Env> = async ({
   request,
   env,
 }) => {
-  const body = await request.json() as any;
+  const body = await readJson(request);
+
+  if (!body) {
+    return failure("VALIDATION_ERROR", "A valid JSON request body is required.", 400);
+  }
+
+  const testPhone = normalizePhone(String(body.test_phone ?? ""));
+
+  if (testPhone && testPhone.length < 10) {
+    return failure("VALIDATION_ERROR", "Enter a valid test phone number.", 400);
+  }
 
   await env.DB.prepare(`
-    UPDATE demo_settings
-    SET
-      test_phone=?,
-      unlimited_joins=?,
-      bypass_duplicates=?,
-      always_send_sms=?
-    WHERE id=1
+    INSERT INTO demo_settings (
+      id,
+      test_phone,
+      unlimited_joins,
+      bypass_duplicates,
+      always_send_sms
+    )
+    VALUES (1, ?, ?, ?, ?)
+    ON CONFLICT(id) DO UPDATE SET
+      test_phone=excluded.test_phone,
+      unlimited_joins=excluded.unlimited_joins,
+      bypass_duplicates=excluded.bypass_duplicates,
+      always_send_sms=excluded.always_send_sms
   `)
   .bind(
-    normalizePhone(String(body.test_phone ?? "")),
+    testPhone,
     body.unlimited_joins ? 1 : 0,
     body.bypass_duplicates ? 1 : 0,
     body.always_send_sms ? 1 : 0
   )
   .run();
 
-  return success({saved:true});
+  return success({
+    saved: true,
+    test_phone: testPhone,
+    unlimited_joins: body.unlimited_joins ? 1 : 0,
+    bypass_duplicates: body.bypass_duplicates ? 1 : 0,
+    always_send_sms: body.always_send_sms ? 1 : 0,
+  });
 };

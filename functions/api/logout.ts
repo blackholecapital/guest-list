@@ -1,11 +1,16 @@
 import { revokeAdminSession } from "../lib/admin-session";
+import { revokePromoterSession } from "../lib/promoter-session";
 import { failure, type Env } from "../lib/api";
 
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
-  const cookie = await revokeAdminSession(request, env.DB);
-  return Response.json({ ok: true, data: { loggedOut: true } }, {
-    headers: { "Cache-Control": "no-store", "Set-Cookie": cookie },
-  });
+  const [adminCookie, promoterCookie] = await Promise.all([
+    revokeAdminSession(request, env.DB),
+    revokePromoterSession(request, env.DB),
+  ]);
+  const headers = new Headers({ "Cache-Control": "no-store" });
+  headers.append("Set-Cookie", adminCookie);
+  headers.append("Set-Cookie", promoterCookie);
+  return Response.json({ ok: true, data: { loggedOut: true } }, { headers });
 };
 
 export const onRequest: PagesFunction<Env> = async context => context.request.method === "POST"

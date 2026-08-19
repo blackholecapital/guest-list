@@ -6,6 +6,9 @@ import {
   LocationHelpPage,
   NotFoundPage,
   PromoterControlPage,
+  PromoterAccountPage,
+  PromoterPasswordRequestPage,
+  PromoterStatsPage,
   PromoterPage,
   PromotersDashboardPage,
   StatsPage,
@@ -28,6 +31,8 @@ export default function App() {
     path.startsWith("/join/") ||
     path.startsWith("/p/") ||
     path === "/location-help" ||
+    path === "/promoter-account" ||
+    path === "/promoter-password-reset" ||
     path === "/contest" ||
     path === "/contest/register";
   const session = getDemoSession();
@@ -83,10 +88,21 @@ export default function App() {
     return <LocationHelpPage />;
   }
 
+  if (path === "/promoter-account") {
+    return <PromoterAccountPage />;
+  }
+
+  if (path === "/promoter-password-reset") {
+    return <PromoterPasswordRequestPage />;
+  }
+
   if (path.startsWith("/promoter/")) {
     const promoterSlug = path.split("/")[2]?.toLowerCase();
 
     if (promoterSlug) {
+      if (path === `/promoter/${promoterSlug}/stats`) {
+        return <PromoterStatsPage promoterSlug={promoterSlug} />;
+      }
       return <PromoterControlPage promoterSlug={promoterSlug} />;
     }
   }

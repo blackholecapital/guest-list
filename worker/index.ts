@@ -14,7 +14,17 @@ export interface Env {
   TWILIO_ACCOUNT_SID: string;
   TWILIO_AUTH_TOKEN: string;
   TWILIO_FROM_NUMBER: string;
+  PROMOTER_EMAIL?: SendEmail;
+  PROMOTER_EMAIL_FROM?: string;
 }
+
+type PromoterAccountEmail = {
+  kind: "promoter_account_email";
+  to: string;
+  subject: string;
+  text: string;
+  html: string;
+};
 
 type OverwatchRequest = {
   protocol?: string;
@@ -106,10 +116,7 @@ async function overwatchSummary(env: Env, body: OverwatchRequest) {
         promoters: promoterRows.length,
         conversionPercentage: conversion,
       },
-      pipeline: {
-        Registered: waiting,
-        "Checked In": checkedIn,
-      },
+      pipeline: { Registered: waiting, "Checked In": checkedIn },
       alerts: [],
       activity: (recent.results || []).map((row: any) => ({
         id: `guest_${row.id}`,
@@ -158,6 +165,30 @@ export default {
   async queue(batch: MessageBatch, env: Env) {
     for (const message of batch.messages) {
       const guest = message.body as any;
+
+      if (guest.kind === "promoter_account_email") {
+        const email = guest as PromoterAccountEmail;
+        const from = env.PROMOTER_EMAIL_FROM?.trim() ?? "";
+        if (!env.PROMOTER_EMAIL || !from) {
+          console.error("promoter email delivery is not configured", { to: email.to });
+          message.ack();
+          continue;
+        }
+        try {
+          await env.PROMOTER_EMAIL.send({
+            from: { email: from, name: "Scores Tampa" },
+            to: email.to,
+            subject: email.subject,
+            text: email.text,
+            html: email.html,
+          });
+          message.ack();
+        } catch (error) {
+          console.error("promoter account email delivery failed", { to: email.to, error });
+          message.retry();
+        }
+        continue;
+      }
 
       if (!guest.smsOptIn) {
         message.ack();

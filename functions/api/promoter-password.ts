@@ -1,5 +1,6 @@
 import { createSalt, hashPassword } from "../lib/passwords";
 import { hasAdminSession } from "../lib/admin-session";
+import { revokePromoterSessions } from "../lib/promoter-session";
 import { failure, readJson, success, type Env } from "../lib/api";
 
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
@@ -48,6 +49,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     if (!updated || updated.password_hash !== passwordHash || updated.password_salt !== salt) {
       throw new Error("D1 did not return the saved credential values");
     }
+    await revokePromoterSessions(env.DB, promoterId);
 
     return success({ promoter: updated, saved: true });
   } catch (error) {

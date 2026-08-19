@@ -1,7 +1,7 @@
 export type DemoRole = "door" | "admin" | "promoter";
 
 export type DemoSession = {
-  username: "Door" | "Admin" | "Blue" | "Yellow" | "Red" | "Green" | "Purple" | "Orange" | "Teal" | "Pink";
+  username: string;
   role: DemoRole;
   promoterSlug?: "blue" | "yellow" | "red" | "green" | "purple" | "orange" | "teal" | "pink";
 };
@@ -59,14 +59,17 @@ export function getDemoSession(): DemoSession | null {
     if (!stored) return null;
 
     const parsed = JSON.parse(stored) as DemoSession;
+    if (parsed.role === "promoter") {
+      const validSlug = LOGIN_ACCOUNTS.some(
+        account => account.role === "promoter" && account.promoterSlug === parsed.promoterSlug,
+      );
+      return validSlug && typeof parsed.username === "string" && parsed.username.length > 0
+        ? parsed
+        : null;
+    }
     return LOGIN_ACCOUNTS.some(
-      (account) =>
-        account.username === parsed.username &&
-        account.role === parsed.role &&
-        account.promoterSlug === parsed.promoterSlug,
-    )
-      ? parsed
-      : null;
+      account => account.username === parsed.username && account.role === parsed.role,
+    ) ? parsed : null;
   } catch {
     return null;
   }
@@ -105,5 +108,6 @@ export function canAccessInternalPath(session: DemoSession, path: string) {
   if (session.role === "admin") return true;
   if (session.role === "door") return path === "/guest-list";
 
-  return path === `/promoter/${session.promoterSlug}`;
+  return path === `/promoter/${session.promoterSlug}` ||
+    path === `/promoter/${session.promoterSlug}/stats`;
 }

@@ -7,6 +7,13 @@
     "crons": ["0 * * * *"]
   },
 
+  "send_email": [
+    {
+      "name": "PROMOTER_EMAIL",
+      "remote": true
+    }
+  ],
+
   "kv_namespaces": [
     {
       "binding": "GUEST_LIST_CACHE",

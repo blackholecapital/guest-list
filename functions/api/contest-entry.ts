@@ -15,7 +15,6 @@ function isAtLeast21(dateOfBirth: string) {
 }
 
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
-  if (!env.CONTEST_PHOTOS) return failure("STORAGE_UNAVAILABLE", "Photo storage is not configured.", 503);
   const form = await request.formData();
   const name = String(form.get("name") || "").trim();
   const phone = normalizePhone(String(form.get("phone") || ""));
@@ -24,23 +23,27 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   const ageConfirmed = form.get("ageConfirmed") === "yes";
   const smsOptIn = form.get("smsOptIn") === "yes";
   const photos = form.getAll("photos").filter((value): value is File => value instanceof File && value.size > 0);
+  const photoStorage = env.CONTEST_PHOTOS;
 
   if (name.length < 2 || phone.length < 10 || !email.includes("@") || !ageConfirmed || !isAtLeast21(dateOfBirth)) {
     return failure("VALIDATION_ERROR", "Please provide valid contact details and confirm that you are at least 21.", 400);
   }
-  if (photos.length < 1 || photos.length > 3) return failure("PHOTO_COUNT", "Please upload between one and three photos.", 400);
+  if (photos.length > 3) return failure("PHOTO_COUNT", "Please upload no more than three photos.", 400);
   if (photos.some(photo => !allowedTypes.has(photo.type) || photo.size > maxBytes)) return failure("PHOTO_INVALID", "Photos must be JPG, PNG, or WebP and no larger than 8 MB each.", 400);
+  if (photos.length > 0 && !photoStorage) return failure("STORAGE_UNAVAILABLE", "Photo storage is not configured.", 503);
 
   const inserted = await env.DB.prepare(`INSERT INTO contest_entries (name, phone, email, date_of_birth, sms_opt_in, age_confirmed) VALUES (?, ?, ?, ?, ?, 1)`).bind(name, phone, email, dateOfBirth, smsOptIn ? 1 : 0).run();
   const entryId = Number(inserted.meta.last_row_id);
   const savedKeys: string[] = [];
   try {
-    for (const [index, photo] of photos.entries()) {
-      const extension = photo.type === "image/png" ? "png" : photo.type === "image/webp" ? "webp" : "jpg";
-      const key = `entries/${entryId}/${crypto.randomUUID()}-${index + 1}.${extension}`;
-      await env.CONTEST_PHOTOS.put(key, photo.stream(), { httpMetadata: { contentType: photo.type }, customMetadata: { entryId: String(entryId), originalName: photo.name } });
-      savedKeys.push(key);
-      await env.DB.prepare(`INSERT INTO contest_photos (entry_id, object_key, content_type, file_name) VALUES (?, ?, ?, ?)`).bind(entryId, key, photo.type, photo.name.slice(0, 240)).run();
+    if (photoStorage) {
+      for (const [index, photo] of photos.entries()) {
+        const extension = photo.type === "image/png" ? "png" : photo.type === "image/webp" ? "webp" : "jpg";
+        const key = `entries/${entryId}/${crypto.randomUUID()}-${index + 1}.${extension}`;
+        await photoStorage.put(key, photo.stream(), { httpMetadata: { contentType: photo.type }, customMetadata: { entryId: String(entryId), originalName: photo.name } });
+        savedKeys.push(key);
+        await env.DB.prepare(`INSERT INTO contest_photos (entry_id, object_key, content_type, file_name) VALUES (?, ?, ?, ?)`).bind(entryId, key, photo.type, photo.name.slice(0, 240)).run();
+      }
     }
     if (smsOptIn && env.guest_followups) {
       try {
@@ -60,10 +63,10 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
       }
     }
   } catch (error) {
-    await Promise.all(savedKeys.map(key => env.CONTEST_PHOTOS!.delete(key)));
+    if (photoStorage) await Promise.all(savedKeys.map(key => photoStorage.delete(key)));
     await env.DB.prepare(`DELETE FROM contest_entries WHERE id = ?`).bind(entryId).run();
-    console.error("contest photo save failed", error);
-    return failure("UPLOAD_FAILED", "Your photos could not be saved. Please try again.", 500);
+    console.error("contest entry save failed", error);
+    return failure("ENTRY_FAILED", "Your entry could not be completed. Please try again.", 500);
   }
   return success({ entryId, status: "pending" }, 201);
 };

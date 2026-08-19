@@ -9,24 +9,25 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     const reporting = await reportingWindow(request, env);
     const guestWindow = sqlDateWindow("COALESCE(event_date, substr(created_at, 1, 10))", reporting);
     const qrWindow = sqlWindow("created_at", reporting);
-    const [promoter, guests, qrs] = await Promise.all([
-      env.DB.prepare(`
-        SELECT pass_limit, passes_used, reset_days,
+    const promoter = await env.DB.prepare(`
+        SELECT pass_limit, passes_used, reset_days, stats_reset_at,
           MAX(pass_limit - passes_used, 0) AS passes_remaining
         FROM promoters WHERE id = ?
-      `).bind(session.promoterId).first<any>(),
+      `).bind(session.promoterId).first<any>();
+    const statsResetAt = String(promoter?.stats_reset_at ?? "1970-01-01 00:00:00");
+    const [guests, qrs] = await Promise.all([
       env.DB.prepare(`
         SELECT COUNT(*) AS registrations,
           COALESCE(SUM(party_size), 0) AS total_guests,
           COALESCE(SUM(CASE WHEN status = 'checked_in' THEN 1 ELSE 0 END), 0) AS checked_in
         FROM guests
-        WHERE promoter_id = ?${guestWindow.clause}
-      `).bind(session.promoterId, ...guestWindow.values).first<any>(),
+        WHERE promoter_id = ? AND created_at >= ?${guestWindow.clause}
+      `).bind(session.promoterId, statsResetAt, ...guestWindow.values).first<any>(),
       env.DB.prepare(`
         SELECT COUNT(*) AS generated, COALESCE(SUM(used_count), 0) AS scanned
         FROM qr_codes
-        WHERE promoter_id = ? AND deleted_at IS NULL${qrWindow.clause}
-      `).bind(session.promoterId, ...qrWindow.values).first<any>(),
+        WHERE promoter_id = ? AND deleted_at IS NULL AND created_at >= ?${qrWindow.clause}
+      `).bind(session.promoterId, statsResetAt, ...qrWindow.values).first<any>(),
     ]);
     const registrations = Number(guests?.registrations ?? 0);
     const checkedIn = Number(guests?.checked_in ?? 0);

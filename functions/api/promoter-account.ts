@@ -59,6 +59,10 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   }
   const tokenRow = await findToken(env.DB, token);
   if (!tokenRow) return failure("TOKEN_INVALID", "This account link is invalid, expired, or already used.", 410);
+  const colorLogins = new Set(["blue", "yellow", "red", "green", "purple", "orange", "teal", "pink"]);
+  if (colorLogins.has(username.toLowerCase()) && username.toLowerCase() !== tokenRow.promoter_slug.toLowerCase()) {
+    return failure("USERNAME_RESERVED", "That username belongs to another promoter color.", 409);
+  }
   const existingUsername = await env.DB.prepare(`
     SELECT id FROM promoters
     WHERE login_username = ? COLLATE NOCASE AND id != ?

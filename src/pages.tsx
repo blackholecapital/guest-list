@@ -318,9 +318,42 @@ function Shell({
 export function LoginPage() {
   const existingSession = getDemoSession();
   const [username, setUsername] = useState(LOGIN_ACCOUNTS[0].username);
+  const [loginAccounts, setLoginAccounts] = useState(
+    LOGIN_ACCOUNTS.map(account => ({
+      username: account.username,
+      label: account.username,
+      role: account.role,
+    })),
+  );
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [signingIn, setSigningIn] = useState(false);
+
+  useEffect(() => {
+    void api<any>("/api/promoters").then(result => {
+      if ("error" in result || !Array.isArray(result.data?.promoters)) return;
+      const promoterAccounts = result.data.promoters
+        .filter((promoter: any) => Boolean(promoter.active))
+        .map((promoter: any) => {
+          const fallbackUsername = String(promoter.slug ?? "promoter")
+            .replace(/(^|-)([a-z])/g, (_match: string, prefix: string, letter: string) => `${prefix}${letter.toUpperCase()}`);
+          const loginUsername = String(promoter.login_username ?? fallbackUsername);
+          const displayName = String(promoter.name ?? loginUsername);
+          return {
+            username: loginUsername,
+            label: displayName.toLowerCase() === loginUsername.toLowerCase()
+              ? displayName
+              : `${displayName} — ${loginUsername}`,
+            role: "promoter" as const,
+          };
+        });
+      setLoginAccounts([
+        { username: "Door", label: "Door", role: "door" },
+        { username: "Admin", label: "Admin", role: "admin" },
+        ...promoterAccounts,
+      ]);
+    });
+  }, []);
 
   async function handleLogin(event: FormEvent) {
     event.preventDefault();
@@ -358,8 +391,7 @@ export function LoginPage() {
           <form className="guest-form" onSubmit={handleLogin}>
             <label>
               User
-              <input
-                list="login-accounts"
+              <select
                 autoComplete="username"
                 value={username}
                 onChange={(event) => {
@@ -367,13 +399,13 @@ export function LoginPage() {
                   setPassword("");
                   setMessage("");
                 }}
-              />
-              <datalist id="login-accounts">
-                {LOGIN_ACCOUNTS.map((account) => (
-                  <option key={account.username} value={account.username}>
+              >
+                {loginAccounts.map((account) => (
+                  <option key={`${account.role}-${account.username}`} value={account.username}>
+                    {account.label}
                   </option>
                 ))}
-              </datalist>
+              </select>
             </label>
 
             <label>
@@ -2091,6 +2123,8 @@ export function AdminPage() {
   const [visiblePasswordIds, setVisiblePasswordIds] = useState<Record<number, boolean>>({});
   const [passwordStatus, setPasswordStatus] = useState<Record<number, { type: "success" | "error"; message: string }>>({});
   const [savingPasswordId, setSavingPasswordId] = useState<number | null>(null);
+  const [resettingPromoterId, setResettingPromoterId] = useState<number | null>(null);
+  const [resetStatus, setResetStatus] = useState<Record<number, { type: "success" | "error"; message: string }>>({});
   const [savingInviteId, setSavingInviteId] = useState<number | null>(null);
   const [inviteStatus, setInviteStatus] = useState<Record<number, {
     type: "success" | "error";
@@ -2447,6 +2481,80 @@ export function AdminPage() {
       }));
     } finally {
       setSavingInviteId(null);
+    }
+  }
+
+  async function resetPromoter(promoter: AdminPromoter) {
+    const confirmed = window.confirm(
+      `Reset ${promoter.promoterName}?\n\nThis immediately signs the promoter out, clears their email and password, cancels account links, disables active QR codes, resets passes, and starts this color's personal stats at zero. Historical guest records remain in the club audit trail.`,
+    );
+    if (!confirmed) return;
+
+    setResettingPromoterId(promoter.promoterId);
+    setResetStatus(current => {
+      const next = { ...current };
+      delete next[promoter.promoterId];
+      return next;
+    });
+
+    try {
+      const result = await api<any>("/api/promoter-reset", {
+        method: "POST",
+        body: JSON.stringify({ promoterId: promoter.promoterId }),
+      });
+      if ("error" in result) {
+        setResetStatus(current => ({
+          ...current,
+          [promoter.promoterId]: { type: "error", message: result.error.message },
+        }));
+        return;
+      }
+
+      const resetName = String(result.data?.promoter?.name ?? promoter.promoterSlug);
+      const resetLogin = String(result.data?.promoter?.login_username ?? resetName);
+      setPromoterStats(current => current.map(item => item.promoterId === promoter.promoterId
+        ? {
+            ...item,
+            promoterName: resetName,
+            loginUsername: resetLogin,
+            email: "",
+            registrations: 0,
+            totalPartySize: 0,
+            checkedIn: 0,
+            notCheckedIn: 0,
+            redFlags: 0,
+            conversionPercentage: 0,
+          }
+        : item));
+      setPromoterPasswords(current => ({ ...current, [promoter.promoterId]: "" }));
+      setVisiblePasswordIds(current => ({ ...current, [promoter.promoterId]: false }));
+      setInviteStatus(current => {
+        const next = { ...current };
+        delete next[promoter.promoterId];
+        return next;
+      });
+      setPasswordStatus(current => {
+        const next = { ...current };
+        delete next[promoter.promoterId];
+        return next;
+      });
+      setResetStatus(current => ({
+        ...current,
+        [promoter.promoterId]: {
+          type: "success",
+          message: `${resetName} was reset. The former promoter can no longer sign in or use existing QR codes.`,
+        },
+      }));
+    } catch (error) {
+      setResetStatus(current => ({
+        ...current,
+        [promoter.promoterId]: {
+          type: "error",
+          message: error instanceof Error ? error.message : "The promoter could not be reset.",
+        },
+      }));
+    } finally {
+      setResettingPromoterId(null);
     }
   }
 
@@ -3262,6 +3370,23 @@ export function AdminPage() {
                   <span>Conversion</span>
                   <span>{promoter.conversionPercentage}%</span>
                 </div>
+                <button
+                  className="danger-button compact-button promoter-reset-button"
+                  type="button"
+                  disabled={resettingPromoterId === promoter.promoterId}
+                  onClick={() => void resetPromoter(promoter)}
+                >
+                  {resettingPromoterId === promoter.promoterId ? "Resetting..." : "Reset Promoter"}
+                </button>
+                {resetStatus[promoter.promoterId] && (
+                  <div
+                    className={`promoter-password-status ${resetStatus[promoter.promoterId].type}`}
+                    role={resetStatus[promoter.promoterId].type === "error" ? "alert" : "status"}
+                  >
+                    {resetStatus[promoter.promoterId].type === "success" ? "✓ " : "⚠ "}
+                    {resetStatus[promoter.promoterId].message}
+                  </div>
+                )}
               </article>
             ))}
           </div>

@@ -1,5 +1,6 @@
 import { failure, readJson, success, type Env } from "../lib/api";
 import { createAdminSession } from "../lib/admin-session";
+import { createPromoterSession } from "../lib/promoter-session";
 import { constantTimeEqual, verifyPassword } from "../lib/passwords";
 
 const staffAccounts = [
@@ -31,7 +32,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   }
 
   const promoter = await env.DB.prepare(`
-    SELECT slug, login_username, password_hash, password_salt
+    SELECT id, slug, login_username, password_hash, password_salt
     FROM promoters
     WHERE login_username = ? COLLATE NOCASE
       AND active = 1
@@ -50,7 +51,13 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
         )
       : false;
     if (matches) {
-      return success({ session: { username: loginUsername, role: "promoter", promoterSlug: String(promoter.slug) } });
+      const cookie = await createPromoterSession(env.DB, Number(promoter.id));
+      return Response.json({
+        ok: true,
+        data: { session: { username: loginUsername, role: "promoter", promoterSlug: String(promoter.slug) } },
+      }, {
+        headers: { "Cache-Control": "no-store", "Set-Cookie": cookie },
+      });
     }
   }
 

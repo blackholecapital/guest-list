@@ -1532,6 +1532,85 @@ a.venue-detail:hover {
   min-width: 0;
 }
 
+.promoter-email-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.promoter-email-control label,
+.promoter-email-control input {
+  min-width: 0;
+  width: 100%;
+}
+
+.promoter-invite-status {
+  display: grid;
+  gap: 9px;
+  margin-top: 9px;
+  padding: 10px 12px;
+  border: 1px solid;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.promoter-invite-status.success {
+  color: #8ff0a4;
+  border-color: rgba(40, 167, 69, 0.65);
+  background: rgba(40, 167, 69, 0.12);
+}
+
+.promoter-invite-status.error {
+  color: #ff9da7;
+  border-color: rgba(220, 53, 69, 0.65);
+  background: rgba(220, 53, 69, 0.12);
+}
+
+.promoter-invite-link {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.promoter-invite-link input {
+  min-width: 0;
+  font-size: 12px;
+}
+
+.login-help-link {
+  display: block;
+  margin-top: 12px;
+  color: var(--gold);
+  text-align: center;
+  font-weight: 700;
+}
+
+.account-login-link {
+  margin-top: 14px;
+  text-align: center;
+}
+
+.promoter-own-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+  border-width: 2px;
+}
+
+.promoter-own-summary div {
+  display: grid;
+  gap: 5px;
+}
+
+.promoter-own-summary small {
+  color: var(--muted);
+}
+
 .promoter-password-visibility {
   min-width: 64px;
 }
@@ -1777,6 +1856,12 @@ header nav,
   }
 
   .promoter-password-control {
+    grid-template-columns: 1fr;
+  }
+
+  .promoter-email-control,
+  .promoter-invite-link,
+  .promoter-own-summary {
     grid-template-columns: 1fr;
   }
 

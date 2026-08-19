@@ -1,4 +1,5 @@
 import { failure, readJson, success, type Env } from "../lib/api";
+import { hasAdminSession } from "../lib/admin-session";
 
 async function resetExpiredPasses(env: Env): Promise<void> {
   await env.DB.prepare(`
@@ -16,9 +17,10 @@ async function resetExpiredPasses(env: Env): Promise<void> {
   `).run();
 }
 
-export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
+export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   try {
     await resetExpiredPasses(env);
+    const isAdmin = await hasAdminSession(request, env.DB);
 
     const rows = await env.DB.prepare(`
       SELECT
@@ -32,13 +34,19 @@ export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
         MAX(p.pass_limit - p.passes_used, 0) AS passes_remaining,
         p.last_reset_at,
         p.login_username,
+        p.email,
         (SELECT COUNT(*) FROM qr_codes q WHERE q.promoter_id = p.id) AS qr_generated,
         (SELECT COALESCE(SUM(q.used_count), 0) FROM qr_codes q WHERE q.promoter_id = p.id) AS qr_scanned
       FROM promoters p
       ORDER BY p.id
     `).all();
 
-    return success({ promoters: rows.results });
+    return success({
+      promoters: (rows.results ?? []).map((row: any) => ({
+        ...row,
+        email: isAdmin ? String(row.email ?? "") : undefined,
+      })),
+    });
   } catch (error) {
     console.error("promoters GET failed", error);
     return failure("DATABASE_ERROR", "Unable to load promoters.", 500);

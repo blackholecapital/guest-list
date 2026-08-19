@@ -172,6 +172,13 @@ const DEMO_STATS = {
   ],
 };
 
+type AdminPromoter = (typeof DEMO_STATS.promoters)[number] & {
+  passLimit?: number;
+  resetDays?: number;
+  loginUsername?: string;
+  email?: string;
+};
+
 function formatDateTime(value: string) {
   return new Date(value).toLocaleString("en-US", {
     month: "short",
@@ -256,6 +263,9 @@ function Shell({
             {session.role === "admin" && <a href="/contest-admin">Contest</a>}
             {session.role === "promoter" && (
               <a href={`/promoter/${session.promoterSlug}`}>My QR Codes</a>
+            )}
+            {session.role === "promoter" && (
+              <a href={`/promoter/${session.promoterSlug}/stats`}>My Stats</a>
             )}
             {session.role === "admin" && <a href="/admin">Admin</a>}
             <button
@@ -348,20 +358,22 @@ export function LoginPage() {
           <form className="guest-form" onSubmit={handleLogin}>
             <label>
               User
-              <select
+              <input
+                list="login-accounts"
+                autoComplete="username"
                 value={username}
                 onChange={(event) => {
-                  setUsername(event.target.value as typeof username);
+                  setUsername(event.target.value);
                   setPassword("");
                   setMessage("");
                 }}
-              >
+              />
+              <datalist id="login-accounts">
                 {LOGIN_ACCOUNTS.map((account) => (
                   <option key={account.username} value={account.username}>
-                    {account.username}
                   </option>
                 ))}
-              </select>
+              </datalist>
             </label>
 
             <label>
@@ -379,8 +391,142 @@ export function LoginPage() {
               {signingIn ? "Signing In..." : "Sign In"}
             </button>
 
+            <a className="login-help-link" href="/promoter-password-reset">
+              Forgot promoter password?
+            </a>
+
             {message && <div className="error-box">{message}</div>}
           </form>
+        </section>
+      </main>
+    </Shell>
+  );
+}
+
+export function PromoterPasswordRequestPage() {
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
+  const [sending, setSending] = useState(false);
+
+  async function requestReset(event: FormEvent) {
+    event.preventDefault();
+    setSending(true);
+    setMessage("");
+    try {
+      const result = await api<any>("/api/promoter-password-request", {
+        method: "POST",
+        body: JSON.stringify({ email }),
+      });
+      setMessage("error" in result
+        ? result.error.message
+        : String(result.data?.message ?? "If the email is registered, a reset link is on the way."));
+    } catch {
+      setMessage("The request could not be completed. Please try again.");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <Shell compact>
+      <main className="page narrow centered login-page">
+        <section className="hero-card login-card">
+          <p className="eyebrow">Promoter access</p>
+          <h1>Reset Password</h1>
+          <p className="muted">Enter the email assigned to your promoter account.</p>
+          <form className="guest-form" onSubmit={requestReset}>
+            <label>Email address<input type="email" autoComplete="email" value={email} onChange={event => setEmail(event.target.value)} required /></label>
+            <button className="primary-button full" disabled={sending}>{sending ? "Sending..." : "Send Reset Link"}</button>
+            {message && <div className="notice-box">{message}</div>}
+            <a className="login-help-link" href="/login">Back to sign in</a>
+          </form>
+        </section>
+      </main>
+    </Shell>
+  );
+}
+
+export function PromoterAccountPage() {
+  const token = new URLSearchParams(window.location.search).get("token") ?? "";
+  const [loading, setLoading] = useState(true);
+  const [valid, setValid] = useState(false);
+  const [promoterName, setPromoterName] = useState("Promoter");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [message, setMessage] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [complete, setComplete] = useState(false);
+
+  useEffect(() => {
+    if (!token) {
+      setMessage("This account link is missing its token.");
+      setLoading(false);
+      return;
+    }
+    void api<any>(`/api/promoter-account?token=${encodeURIComponent(token)}`).then(result => {
+      setLoading(false);
+      if ("error" in result) {
+        setMessage(result.error.message);
+        return;
+      }
+      setValid(true);
+      setPromoterName(String(result.data.promoterName ?? "Promoter"));
+      setUsername(String(result.data.loginUsername ?? ""));
+    }).catch(() => {
+      setLoading(false);
+      setMessage("This account link could not be verified.");
+    });
+  }, [token]);
+
+  async function saveAccount(event: FormEvent) {
+    event.preventDefault();
+    setMessage("");
+    if (password !== confirmPassword) {
+      setMessage("The passwords do not match.");
+      return;
+    }
+    setSaving(true);
+    try {
+      const result = await api<any>("/api/promoter-account", {
+        method: "POST",
+        body: JSON.stringify({ token, username, password }),
+      });
+      if ("error" in result) {
+        setMessage(result.error.message);
+        return;
+      }
+      setComplete(true);
+      setValid(false);
+      setMessage(`Account ready. Sign in as ${result.data.loginUsername}.`);
+    } catch {
+      setMessage("The promoter account could not be saved.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Shell compact>
+      <main className="page narrow centered login-page">
+        <section className="hero-card login-card">
+          <p className="eyebrow">Scores Tampa promoter</p>
+          <h1>{complete ? "Account Ready" : "Set Up Account"}</h1>
+          {loading && <p className="muted">Verifying your secure link...</p>}
+          {!loading && valid && (
+            <>
+              <p className="muted">Create the login for {promoterName}. This link works once.</p>
+              <form className="guest-form" onSubmit={saveAccount}>
+                <label>Username<input autoComplete="username" minLength={3} maxLength={40} pattern="[A-Za-z][A-Za-z0-9._-]{2,39}" value={username} onChange={event => setUsername(event.target.value)} required /></label>
+                <label>Password<input type="password" autoComplete="new-password" minLength={8} maxLength={128} value={password} onChange={event => setPassword(event.target.value)} required /></label>
+                <label>Confirm password<input type="password" autoComplete="new-password" minLength={8} maxLength={128} value={confirmPassword} onChange={event => setConfirmPassword(event.target.value)} required /></label>
+                <button className="primary-button full" disabled={saving}>{saving ? "Saving..." : "Create My Login"}</button>
+              </form>
+            </>
+          )}
+          {message && <div className={complete ? "notice-box" : "error-box"}>{message}</div>}
+          {complete && <a className="primary-button full account-login-link" href="/login">Go to Sign In</a>}
+          {!loading && !valid && !complete && <a className="secondary-button full account-login-link" href="/promoter-password-reset">Request a New Link</a>}
         </section>
       </main>
     </Shell>
@@ -1937,7 +2083,7 @@ export function AdminPage() {
   const [locationAssistanceError, setLocationAssistanceError] = useState(false);
   const [venueConfigLoaded, setVenueConfigLoaded] = useState(false);
   const [venueConfigLoadFailed, setVenueConfigLoadFailed] = useState(false);
-  const [promoterStats, setPromoterStats] = useState(DEMO_STATS.promoters);
+  const [promoterStats, setPromoterStats] = useState<AdminPromoter[]>(DEMO_STATS.promoters);
   const [savingPromoterId, setSavingPromoterId] = useState<number | null>(null);
   const [savedPromoterId, setSavedPromoterId] = useState<number | null>(null);
   const [promoterMessage, setPromoterMessage] = useState("");
@@ -1945,6 +2091,12 @@ export function AdminPage() {
   const [visiblePasswordIds, setVisiblePasswordIds] = useState<Record<number, boolean>>({});
   const [passwordStatus, setPasswordStatus] = useState<Record<number, { type: "success" | "error"; message: string }>>({});
   const [savingPasswordId, setSavingPasswordId] = useState<number | null>(null);
+  const [savingInviteId, setSavingInviteId] = useState<number | null>(null);
+  const [inviteStatus, setInviteStatus] = useState<Record<number, {
+    type: "success" | "error";
+    message: string;
+    inviteUrl?: string;
+  }>>({});
   const [exportingStats, setExportingStats] = useState(false);
   const [eventPromoterId, setEventPromoterId] = useState("1");
   const [eventName, setEventName] = useState("");
@@ -2069,6 +2221,7 @@ export function AdminPage() {
           passLimit: Number(settings?.pass_limit ?? 25),
           resetDays: Number(settings?.reset_days ?? 1),
           loginUsername: String(settings?.login_username ?? ""),
+          email: String(settings?.email ?? ""),
           };
         }),
       );
@@ -2235,6 +2388,65 @@ export function AdminPage() {
     } finally {
       window.clearTimeout(timeoutId);
       setSavingPasswordId(null);
+    }
+  }
+
+  async function sendPromoterInvite(promoterId: number, email: string) {
+    const normalizedEmail = email.trim();
+    if (!normalizedEmail) {
+      setInviteStatus(current => ({
+        ...current,
+        [promoterId]: { type: "error", message: "Enter the promoter's email address first." },
+      }));
+      return;
+    }
+
+    setSavingInviteId(promoterId);
+    setInviteStatus(current => {
+      const next = { ...current };
+      delete next[promoterId];
+      return next;
+    });
+
+    try {
+      const result = await api<any>("/api/promoter-invite", {
+        method: "POST",
+        body: JSON.stringify({ promoterId, email: normalizedEmail }),
+      });
+      if ("error" in result) {
+        setInviteStatus(current => ({
+          ...current,
+          [promoterId]: { type: "error", message: result.error.message },
+        }));
+        return;
+      }
+
+      const savedEmail = String(result.data?.promoter?.email ?? normalizedEmail);
+      const inviteUrl = String(result.data?.inviteUrl ?? "");
+      const emailQueued = Boolean(result.data?.emailQueued);
+      setPromoterStats(current => current.map(item =>
+        item.promoterId === promoterId ? { ...item, email: savedEmail } : item,
+      ));
+      setInviteStatus(current => ({
+        ...current,
+        [promoterId]: {
+          type: "success",
+          message: emailQueued
+            ? `Invitation queued for ${savedEmail}. The one-time link expires in 48 hours.`
+            : `Email saved for ${savedEmail}. Copy and send the one-time link below.`,
+          inviteUrl,
+        },
+      }));
+    } catch (error) {
+      setInviteStatus(current => ({
+        ...current,
+        [promoterId]: {
+          type: "error",
+          message: error instanceof Error ? error.message : "The invitation could not be created.",
+        },
+      }));
+    } finally {
+      setSavingInviteId(null);
     }
   }
 
@@ -2866,7 +3078,7 @@ export function AdminPage() {
             <div>
               <p className="eyebrow">Promoter overview</p>
               <h2>Promoter Management</h2>
-              <p className="muted">Change display names and rotate promoter login passwords without changing QR links.</p>
+              <p className="muted">Manage display names, account invitations, and emergency password overrides without changing QR links.</p>
             </div>
             <a className="secondary-button compact-button" href="/promoters">
               Open Promoter Dashboard
@@ -2900,7 +3112,7 @@ export function AdminPage() {
                   />
                 </label>
                 <small className="promoter-link-note">QR link: /p/{promoter.promoterSlug}</small>
-                <small className="promoter-link-note">Login: {(promoter as any).loginUsername || "Assigned promoter account"}</small>
+                <small className="promoter-link-note">Login: {promoter.loginUsername || "Not set up yet"}</small>
                 <button
                   className="secondary-button compact-button promoter-save-button"
                   type="button"
@@ -2936,6 +3148,62 @@ export function AdminPage() {
                       ? "Saved"
                       : "Save Name"}
                 </button>
+                <div className="promoter-email-control">
+                  <label>
+                    Promoter email
+                    <input
+                      type="email"
+                      autoComplete="off"
+                      maxLength={254}
+                      placeholder="promoter@example.com"
+                      value={promoter.email ?? ""}
+                      onChange={event => {
+                        const email = event.target.value;
+                        setPromoterStats(current => current.map(item =>
+                          item.promoterId === promoter.promoterId ? { ...item, email } : item,
+                        ));
+                        setInviteStatus(current => {
+                          const next = { ...current };
+                          delete next[promoter.promoterId];
+                          return next;
+                        });
+                      }}
+                    />
+                  </label>
+                  <button
+                    className="secondary-button compact-button"
+                    type="button"
+                    disabled={savingInviteId === promoter.promoterId || !(promoter.email ?? "").trim()}
+                    onClick={() => void sendPromoterInvite(promoter.promoterId, promoter.email ?? "")}
+                  >
+                    {savingInviteId === promoter.promoterId ? "Sending..." : "Save Email & Send Invite"}
+                  </button>
+                </div>
+                {inviteStatus[promoter.promoterId] && (
+                  <div
+                    className={`promoter-invite-status ${inviteStatus[promoter.promoterId].type}`}
+                    role={inviteStatus[promoter.promoterId].type === "error" ? "alert" : "status"}
+                  >
+                    <span>{inviteStatus[promoter.promoterId].type === "success" ? "✓ " : "⚠ "}{inviteStatus[promoter.promoterId].message}</span>
+                    {inviteStatus[promoter.promoterId].inviteUrl && (
+                      <div className="promoter-invite-link">
+                        <input
+                          readOnly
+                          aria-label={`One-time invitation link for ${promoter.promoterName}`}
+                          value={inviteStatus[promoter.promoterId].inviteUrl}
+                          onFocus={event => event.currentTarget.select()}
+                        />
+                        <button
+                          className="secondary-button compact-button"
+                          type="button"
+                          onClick={() => void navigator.clipboard.writeText(inviteStatus[promoter.promoterId].inviteUrl ?? "")}
+                        >
+                          Copy Link
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
                 <div className="promoter-password-control">
                   <input
                     type={visiblePasswordIds[promoter.promoterId] ? "text" : "password"}
@@ -2999,6 +3267,81 @@ export function AdminPage() {
           </div>
           {promoterMessage && <div className="notice-box promoter-save-notice">{promoterMessage}</div>}
         </section>
+      </main>
+    </Shell>
+  );
+}
+
+export function PromoterStatsPage({ promoterSlug }: { promoterSlug: string }) {
+  const [range, setRange] = useState<"today" | "week" | "month" | "all">("week");
+  const [date, setDate] = useState(() => dateInputValue(0));
+  const [data, setData] = useState<any>(null);
+  const [message, setMessage] = useState("Loading your statistics...");
+  const query = useMemo(() => {
+    const params = new URLSearchParams({ range });
+    if (range !== "all") params.set("date", date);
+    return params.toString();
+  }, [date, range]);
+
+  useEffect(() => {
+    setMessage("Loading your statistics...");
+    void api<any>(`/api/promoter-stats?${query}`).then(result => {
+      if ("error" in result) {
+        setData(null);
+        setMessage(result.error.message);
+        return;
+      }
+      setData(result.data);
+      setMessage("");
+    }).catch(() => {
+      setData(null);
+      setMessage("Your statistics could not be loaded.");
+    });
+  }, [query]);
+
+  const stats = data?.stats ?? {};
+  return (
+    <Shell>
+      <main className="page wide promoter-my-stats">
+        <div className="page-heading">
+          <div>
+            <p className="eyebrow">My performance</p>
+            <h1>{data?.promoter?.name ?? promoterSlug} Stats</h1>
+            <p className="muted">Only your QR activity, registrations, guests, and conversions.</p>
+          </div>
+          <a className="secondary-button" href={`/promoter/${promoterSlug}`}>My QR Codes</a>
+        </div>
+
+        <section className="reporting-toolbar" aria-label="My statistics date range">
+          <div className="reporting-presets">
+            {([["today", "Day"], ["week", "Week"], ["month", "Month"], ["all", "All time"]] as const).map(([value, label]) => (
+              <button key={value} type="button" className={range === value ? "is-active" : ""} onClick={() => setRange(value)}>{label}</button>
+            ))}
+          </div>
+          <label>View date<input type="date" value={date} disabled={range === "all"} onChange={event => setDate(event.target.value)} /></label>
+          <strong>{data?.reporting?.label ?? "Selected period"}</strong>
+        </section>
+
+        {message && <div className="notice-box">{message}</div>}
+        {data && (
+          <>
+            <section className="stat-grid">
+              <StatCard label="QR Generated" value={Number(stats.qrGenerated ?? 0)} />
+              <StatCard label="QR Scanned" value={Number(stats.qrScanned ?? 0)} />
+              <StatCard label="Registrations" value={Number(stats.registrations ?? 0)} />
+              <StatCard label="Total Guests" value={Number(stats.totalGuests ?? 0)} />
+              <StatCard label="Checked In" value={Number(stats.checkedIn ?? 0)} />
+              <StatCard label="QR Scan Rate" value={`${Number(stats.scanConversionPercentage ?? 0)}%`} />
+              <StatCard label="Scan → Registration" value={`${Number(stats.registrationConversionPercentage ?? 0)}%`} />
+              <StatCard label="Check-In Conversion" value={`${Number(stats.checkInConversionPercentage ?? 0)}%`} />
+            </section>
+            <section className="data-card promoter-own-summary" style={{ borderColor: promoterColor(promoterSlug) }}>
+              <div><small>Passes remaining</small><strong>{Number(data.promoter.passesRemaining ?? 0)} / {Number(data.promoter.passLimit ?? 0)}</strong></div>
+              <div><small>Pass reset</small><strong>Every {Number(data.promoter.resetDays ?? 1)} day{Number(data.promoter.resetDays ?? 1) === 1 ? "" : "s"}</strong></div>
+              <div><small>Promoter link</small><strong>/p/{data.promoter.slug}</strong></div>
+            </section>
+          </>
+        )}
       </main>
     </Shell>
   );

@@ -429,9 +429,201 @@ export function LoginPage() {
 
             {message && <div className="error-box">{message}</div>}
           </form>
+
+          <div className="login-instruction-links" aria-label="Staff instructions">
+            <p>New here? Watch the quick setup guide.</p>
+            <a className="login-instruction-link" href="/instructions/promoter">
+              <span className="login-instruction-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" role="img">
+                  <path d="M12 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm-8 19a8 8 0 0 1 16 0H4Z" />
+                  <path d="m15.8 8.2 4.4 2.8-4.4 2.8V8.2Z" />
+                </svg>
+              </span>
+              <span>
+                <strong>Promoter Instructions</strong>
+                <small>Account setup, QR codes &amp; guest registration</small>
+              </span>
+              <span className="login-instruction-arrow" aria-hidden="true">›</span>
+            </a>
+            <a className="login-instruction-link" href="/instructions/door">
+              <span className="login-instruction-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" role="img">
+                  <path d="M4 3h12v18H4V3Zm12 3h4v15h-4V6Z" />
+                  <circle cx="13" cy="12" r="1.25" />
+                  <path d="m7 12 2 2 4-5" />
+                </svg>
+              </span>
+              <span>
+                <strong>Door Staff Instructions</strong>
+                <small>Guest lookup, confirmation &amp; check-in</small>
+              </span>
+              <span className="login-instruction-arrow" aria-hidden="true">›</span>
+            </a>
+          </div>
         </section>
       </main>
     </Shell>
+  );
+}
+
+type StaffInstruction = {
+  title: string;
+  detail: string;
+};
+
+function StaffInstructionsPage({
+  audience,
+  headline,
+  intro,
+  videoId,
+  videoTitle,
+  steps,
+}: {
+  audience: "Promoter" | "Door Staff";
+  headline: string;
+  intro: string;
+  videoId: string;
+  videoTitle: string;
+  steps: StaffInstruction[];
+}) {
+  return (
+    <Shell compact>
+      <main className="page instruction-page">
+        <a className="instruction-back-link" href="/login">← Back to Sign In</a>
+
+        <header className="instruction-heading">
+          <p className="eyebrow">Scores Tampa Staff Guide</p>
+          <h1>{headline}</h1>
+          <p>{intro}</p>
+        </header>
+
+        <div className="instruction-layout">
+          <section className="instruction-video-card" aria-label={`${audience} training video`}>
+            <div className="instruction-video-frame">
+              <iframe
+                src={`https://www.youtube-nocookie.com/embed/${videoId}?rel=0`}
+                title={videoTitle}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerPolicy="strict-origin-when-cross-origin"
+                allowFullScreen
+              />
+            </div>
+            <a
+              className="instruction-youtube-link"
+              href={`https://youtube.com/shorts/${videoId}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <span aria-hidden="true">▶</span>
+              Open video in YouTube
+            </a>
+          </section>
+
+          <section className="instruction-checklist hero-card">
+            <p className="eyebrow">Quick Start</p>
+            <h2>{audience} Checklist</h2>
+            <ol>
+              {steps.map((step, index) => (
+                <li key={step.title}>
+                  <span aria-hidden="true">{index + 1}</span>
+                  <div>
+                    <strong>{step.title}</strong>
+                    <p>{step.detail}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+            <a className="primary-button full instruction-signin-button" href="/login">
+              Go to Staff Sign In
+            </a>
+          </section>
+        </div>
+      </main>
+    </Shell>
+  );
+}
+
+export function PromoterInstructionsPage() {
+  const steps: StaffInstruction[] = [
+    {
+      title: "Set up your account",
+      detail: "Use the one-time link in your invitation email to choose a username and password. If management assigned your login, use those credentials instead.",
+    },
+    {
+      title: "Choose your promoter login",
+      detail: "On the Sign In page, select your promoter name or username from the User menu, then enter your password.",
+    },
+    {
+      title: "Generate a guest QR code",
+      detail: "Open My QR Codes, allow Location Services, and tap Generate QR Code. Promoter QR generation must happen outside the venue geofence.",
+    },
+    {
+      title: "Use a fresh QR for each registration",
+      detail: "Each generated QR code is single-use. Let the customer scan it, then generate a new code for the next customer or party.",
+    },
+    {
+      title: "Customer completes registration",
+      detail: "The customer enters their name, phone number, and party size, allows location access, and submits the guest-list form.",
+    },
+    {
+      title: "Use Location Help when needed",
+      detail: "If location verification fails and Location Help is enabled, the customer taps the help link, enters their information, and can receive an SMS confirmation to show at the door.",
+    },
+    {
+      title: "Track your results",
+      detail: "Open My Stats to review your registrations, check-ins, conversion rate, and remaining passes.",
+    },
+  ];
+
+  return (
+    <StaffInstructionsPage
+      audience="Promoter"
+      headline="Promoter Instructions"
+      intro="Watch the setup video, then follow this checklist to create one-time guest QR codes and track your conversions."
+      videoId="TuverSoB8OA"
+      videoTitle="Scores Tampa promoter account and guest-list instructions"
+      steps={steps}
+    />
+  );
+}
+
+export function DoorInstructionsPage() {
+  const steps: StaffInstruction[] = [
+    {
+      title: "Sign in as Door",
+      detail: "Select Door from the User menu and enter the door-staff password assigned by management.",
+    },
+    {
+      title: "Find the arriving guest",
+      detail: "The live Guest List refreshes every 10 seconds. Search by guest name, phone number, or promoter and use the Pending filter when needed.",
+    },
+    {
+      title: "Confirm the guest details",
+      detail: "Match the guest's name and phone number, confirm the party size, and review the promoter shown on the entry tile.",
+    },
+    {
+      title: "Verify Location Help entries",
+      detail: "A flagged location-service exception includes a confirmation code. Match that code to the SMS or confirmation screen on the guest's phone before admitting them.",
+    },
+    {
+      title: "Complete the check-in",
+      detail: "Tap Check In on a valid pending entry. The tile changes to Checked In and the conversion is recorded for the promoter.",
+    },
+    {
+      title: "Escalate anything that does not match",
+      detail: "Do not check in an entry when the guest information or Location Help code cannot be verified. Ask management for assistance.",
+    },
+  ];
+
+  return (
+    <StaffInstructionsPage
+      audience="Door Staff"
+      headline="Door Staff Instructions"
+      intro="Watch the door walkthrough, then use this checklist to verify registrations and record clean guest check-ins."
+      videoId="TzoTGZAEfR4"
+      videoTitle="Scores Tampa door staff guest-list instructions"
+      steps={steps}
+    />
   );
 }
 

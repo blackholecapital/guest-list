@@ -1,5 +1,6 @@
 import {
   AdminPage,
+  DoorInstructionsPage,
   GuestListPage,
   JoinTokenPage,
   LoginPage,
@@ -7,6 +8,7 @@ import {
   NotFoundPage,
   PromoterControlPage,
   PromoterAccountPage,
+  PromoterInstructionsPage,
   PromoterPasswordRequestPage,
   PromoterStatsPage,
   PromoterPage,
@@ -25,6 +27,14 @@ export default function App() {
 
   if (path === "/login") {
     return <LoginPage />;
+  }
+
+  if (path === "/instructions/promoter") {
+    return <PromoterInstructionsPage />;
+  }
+
+  if (path === "/instructions/door") {
+    return <DoorInstructionsPage />;
   }
 
   const isPublicGuestPath =

@@ -27,7 +27,8 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
         COALESCE(SUM(CASE WHEN g.status != 'checked_in' THEN 1 ELSE 0 END), 0) AS not_checked_in
       FROM promoters p
       JOIN venues v ON v.id = p.venue_id
-      LEFT JOIN guests g ON g.promoter_id = p.id${guestsWindow.clause}
+      LEFT JOIN guests g ON g.promoter_id = p.id
+        AND g.created_at >= p.stats_reset_at${guestsWindow.clause}
       WHERE v.slug = 'scores-tampa'
       GROUP BY p.id, p.name, p.slug
       ORDER BY registrations DESC, p.name ASC

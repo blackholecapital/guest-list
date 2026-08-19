@@ -35,8 +35,14 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
         p.last_reset_at,
         p.login_username,
         p.email,
-        (SELECT COUNT(*) FROM qr_codes q WHERE q.promoter_id = p.id) AS qr_generated,
-        (SELECT COALESCE(SUM(q.used_count), 0) FROM qr_codes q WHERE q.promoter_id = p.id) AS qr_scanned
+        (SELECT COUNT(*) FROM qr_codes q
+          WHERE q.promoter_id = p.id
+            AND q.deleted_at IS NULL
+            AND q.created_at >= p.stats_reset_at) AS qr_generated,
+        (SELECT COALESCE(SUM(q.used_count), 0) FROM qr_codes q
+          WHERE q.promoter_id = p.id
+            AND q.deleted_at IS NULL
+            AND q.created_at >= p.stats_reset_at) AS qr_scanned
       FROM promoters p
       ORDER BY p.id
     `).all();
@@ -54,6 +60,9 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
 };
 
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
+  if (!await hasAdminSession(request, env.DB)) {
+    return failure("ADMIN_SESSION_REQUIRED", "Your Admin session expired. Log out and sign in again.", 401);
+  }
   const body = await readJson(request);
   const id = Number(body?.id);
   const name = typeof body?.name === "string" ? body.name.trim() : "";

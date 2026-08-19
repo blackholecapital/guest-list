@@ -14,7 +14,7 @@ export interface Env {
   TWILIO_ACCOUNT_SID: string;
   TWILIO_AUTH_TOKEN: string;
   TWILIO_FROM_NUMBER: string;
-  PROMOTER_EMAIL?: SendEmail;
+  RESEND_API_KEY?: string;
   PROMOTER_EMAIL_FROM?: string;
 }
 
@@ -168,24 +168,36 @@ export default {
 
       if (guest.kind === "promoter_account_email") {
         const email = guest as PromoterAccountEmail;
+        const apiKey = env.RESEND_API_KEY?.trim() ?? "";
         const from = env.PROMOTER_EMAIL_FROM?.trim() ?? "";
-        if (!env.PROMOTER_EMAIL || !from) {
+        if (!apiKey || !from) {
           console.error("promoter email delivery is not configured", { to: email.to });
-          message.ack();
+          message.retry({ delaySeconds: 300 });
           continue;
         }
         try {
-          await env.PROMOTER_EMAIL.send({
-            from: { email: from, name: "Scores Tampa" },
-            to: email.to,
-            subject: email.subject,
-            text: email.text,
-            html: email.html,
+          const response = await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+              "Content-Type": "application/json",
+              "Idempotency-Key": `promoter-account-${message.id}`,
+            },
+            body: JSON.stringify({
+              from,
+              to: [email.to],
+              subject: email.subject,
+              text: email.text,
+              html: email.html,
+            }),
           });
+          if (!response.ok) {
+            throw new Error(`Resend returned HTTP ${response.status}`);
+          }
           message.ack();
         } catch (error) {
           console.error("promoter account email delivery failed", { to: email.to, error });
-          message.retry();
+          message.retry({ delaySeconds: 60 });
         }
         continue;
       }

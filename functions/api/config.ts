@@ -18,6 +18,7 @@ interface VenueRow {
   hours_json: string | null;
   customer_cooldown_days: number;
   geofence_enabled: number;
+  customer_geofence_enabled: number;
   location_assistance_enabled: number;
   weekly_reset_day: number;
 }
@@ -82,6 +83,7 @@ async function getVenue(env: Env): Promise<VenueRow | null> {
         hours_json,
         customer_cooldown_days,
         geofence_enabled,
+        customer_geofence_enabled,
         location_assistance_enabled,
         weekly_reset_day
       FROM venues
@@ -125,6 +127,8 @@ export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
         radiusMeters: venue.radius_meters,
         customerCooldownDays: venue.customer_cooldown_days ?? 14,
         geofenceEnabled: venue.geofence_enabled === 1,
+        promoterGeofenceEnabled: venue.geofence_enabled === 1,
+        customerGeofenceEnabled: venue.customer_geofence_enabled === 1,
         locationAssistanceEnabled: venue.location_assistance_enabled === 1,
         weeklyResetDay: venue.weekly_reset_day ?? 1,
         hours: parseHours(venue.hours_json),
@@ -186,6 +190,7 @@ export const onRequestPost: PagesFunction<Env> = async ({
   const radiusMeters = Number(body.radiusMeters);
   const customerCooldownDays = Number(body.customerCooldownDays);
   const geofenceEnabled = body.geofenceEnabled === true;
+  const customerGeofenceEnabled = body.customerGeofenceEnabled !== false;
   const locationAssistanceEnabled = body.locationAssistanceEnabled === true;
   const weeklyResetDay = Number(body.weeklyResetDay);
 
@@ -243,6 +248,7 @@ export const onRequestPost: PagesFunction<Env> = async ({
           hours_json = ?,
           customer_cooldown_days = ?,
           geofence_enabled = ?,
+          customer_geofence_enabled = ?,
           location_assistance_enabled = ?,
           weekly_reset_day = ?
         WHERE id = ?
@@ -257,6 +263,7 @@ export const onRequestPost: PagesFunction<Env> = async ({
         JSON.stringify(hours),
         customerCooldownDays,
         geofenceEnabled ? 1 : 0,
+        customerGeofenceEnabled ? 1 : 0,
         locationAssistanceEnabled ? 1 : 0,
         weeklyResetDay,
         venue.id,

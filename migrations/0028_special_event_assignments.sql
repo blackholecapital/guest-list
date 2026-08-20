@@ -65,19 +65,124 @@ WHERE q.is_special_event = 1
   AND q.deleted_at IS NULL;
 
 -- Ten reusable temporary promoter slots. Names are assigned by Admin as needed.
+-- Keep these as individual statements because D1 rejects the previous compound
+-- SELECT seed while applying a remote migration.
 INSERT INTO promoters (
   venue_id, slug, name, active, pass_limit, reset_days, passes_used,
   last_reset_at, promoter_kind, temporary_slot
 )
-SELECT v.id, 'temp-' || n.slot, 'Temporary ' || n.slot, 0, 1, 1, 0,
-       CURRENT_TIMESTAMP, 'temporary', n.slot
+SELECT v.id, 'temp-1', 'Temporary 1', 0, 1, 1, 0,
+       CURRENT_TIMESTAMP, 'temporary', 1
 FROM venues v
-CROSS JOIN (
-  SELECT 1 AS slot UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5
-  UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9 UNION ALL SELECT 10
-) n
 WHERE v.slug = 'scores-tampa'
   AND NOT EXISTS (
-    SELECT 1 FROM promoters p
-    WHERE p.venue_id = v.id AND p.temporary_slot = n.slot
+    SELECT 1 FROM promoters p WHERE p.venue_id = v.id AND p.temporary_slot = 1
+  );
+
+INSERT INTO promoters (
+  venue_id, slug, name, active, pass_limit, reset_days, passes_used,
+  last_reset_at, promoter_kind, temporary_slot
+)
+SELECT v.id, 'temp-2', 'Temporary 2', 0, 1, 1, 0,
+       CURRENT_TIMESTAMP, 'temporary', 2
+FROM venues v
+WHERE v.slug = 'scores-tampa'
+  AND NOT EXISTS (
+    SELECT 1 FROM promoters p WHERE p.venue_id = v.id AND p.temporary_slot = 2
+  );
+
+INSERT INTO promoters (
+  venue_id, slug, name, active, pass_limit, reset_days, passes_used,
+  last_reset_at, promoter_kind, temporary_slot
+)
+SELECT v.id, 'temp-3', 'Temporary 3', 0, 1, 1, 0,
+       CURRENT_TIMESTAMP, 'temporary', 3
+FROM venues v
+WHERE v.slug = 'scores-tampa'
+  AND NOT EXISTS (
+    SELECT 1 FROM promoters p WHERE p.venue_id = v.id AND p.temporary_slot = 3
+  );
+
+INSERT INTO promoters (
+  venue_id, slug, name, active, pass_limit, reset_days, passes_used,
+  last_reset_at, promoter_kind, temporary_slot
+)
+SELECT v.id, 'temp-4', 'Temporary 4', 0, 1, 1, 0,
+       CURRENT_TIMESTAMP, 'temporary', 4
+FROM venues v
+WHERE v.slug = 'scores-tampa'
+  AND NOT EXISTS (
+    SELECT 1 FROM promoters p WHERE p.venue_id = v.id AND p.temporary_slot = 4
+  );
+
+INSERT INTO promoters (
+  venue_id, slug, name, active, pass_limit, reset_days, passes_used,
+  last_reset_at, promoter_kind, temporary_slot
+)
+SELECT v.id, 'temp-5', 'Temporary 5', 0, 1, 1, 0,
+       CURRENT_TIMESTAMP, 'temporary', 5
+FROM venues v
+WHERE v.slug = 'scores-tampa'
+  AND NOT EXISTS (
+    SELECT 1 FROM promoters p WHERE p.venue_id = v.id AND p.temporary_slot = 5
+  );
+
+INSERT INTO promoters (
+  venue_id, slug, name, active, pass_limit, reset_days, passes_used,
+  last_reset_at, promoter_kind, temporary_slot
+)
+SELECT v.id, 'temp-6', 'Temporary 6', 0, 1, 1, 0,
+       CURRENT_TIMESTAMP, 'temporary', 6
+FROM venues v
+WHERE v.slug = 'scores-tampa'
+  AND NOT EXISTS (
+    SELECT 1 FROM promoters p WHERE p.venue_id = v.id AND p.temporary_slot = 6
+  );
+
+INSERT INTO promoters (
+  venue_id, slug, name, active, pass_limit, reset_days, passes_used,
+  last_reset_at, promoter_kind, temporary_slot
+)
+SELECT v.id, 'temp-7', 'Temporary 7', 0, 1, 1, 0,
+       CURRENT_TIMESTAMP, 'temporary', 7
+FROM venues v
+WHERE v.slug = 'scores-tampa'
+  AND NOT EXISTS (
+    SELECT 1 FROM promoters p WHERE p.venue_id = v.id AND p.temporary_slot = 7
+  );
+
+INSERT INTO promoters (
+  venue_id, slug, name, active, pass_limit, reset_days, passes_used,
+  last_reset_at, promoter_kind, temporary_slot
+)
+SELECT v.id, 'temp-8', 'Temporary 8', 0, 1, 1, 0,
+       CURRENT_TIMESTAMP, 'temporary', 8
+FROM venues v
+WHERE v.slug = 'scores-tampa'
+  AND NOT EXISTS (
+    SELECT 1 FROM promoters p WHERE p.venue_id = v.id AND p.temporary_slot = 8
+  );
+
+INSERT INTO promoters (
+  venue_id, slug, name, active, pass_limit, reset_days, passes_used,
+  last_reset_at, promoter_kind, temporary_slot
+)
+SELECT v.id, 'temp-9', 'Temporary 9', 0, 1, 1, 0,
+       CURRENT_TIMESTAMP, 'temporary', 9
+FROM venues v
+WHERE v.slug = 'scores-tampa'
+  AND NOT EXISTS (
+    SELECT 1 FROM promoters p WHERE p.venue_id = v.id AND p.temporary_slot = 9
+  );
+
+INSERT INTO promoters (
+  venue_id, slug, name, active, pass_limit, reset_days, passes_used,
+  last_reset_at, promoter_kind, temporary_slot
+)
+SELECT v.id, 'temp-10', 'Temporary 10', 0, 1, 1, 0,
+       CURRENT_TIMESTAMP, 'temporary', 10
+FROM venues v
+WHERE v.slug = 'scores-tampa'
+  AND NOT EXISTS (
+    SELECT 1 FROM promoters p WHERE p.venue_id = v.id AND p.temporary_slot = 10
   );

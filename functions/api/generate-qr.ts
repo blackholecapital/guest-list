@@ -9,6 +9,36 @@ interface PromoterPassRow {
   reset_days: number;
 }
 
+async function recordGenerationAttempt(
+  env: Env,
+  details: {
+    promoterId: number;
+    qrCodeId?: number | null;
+    latitude?: number | null;
+    longitude?: number | null;
+    accuracyMeters?: number | null;
+    distanceMeters?: number | null;
+    locationStatus: string;
+    outcome: string;
+  },
+) {
+  await env.DB.prepare(`
+    INSERT INTO promoter_qr_generation_attempts (
+      promoter_id, qr_code_id, latitude, longitude, accuracy_meters,
+      distance_meters, location_status, outcome
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).bind(
+    details.promoterId,
+    details.qrCodeId ?? null,
+    details.latitude ?? null,
+    details.longitude ?? null,
+    details.accuracyMeters ?? null,
+    details.distanceMeters ?? null,
+    details.locationStatus,
+    details.outcome,
+  ).run();
+}
+
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   const body = await request.json() as {
     promoterId?: number;
@@ -87,11 +117,11 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
         Number.isFinite(longitude) && longitude >= -180 && longitude <= 180;
 
       if (!hasLocation) {
-        await env.DB.prepare(`
-          INSERT INTO promoter_qr_generation_attempts (
-            promoter_id, location_status, outcome
-          ) VALUES (?, ?, 'location_unavailable')
-        `).bind(promoterId, locationStatus).run();
+        await recordGenerationAttempt(env, {
+          promoterId,
+          locationStatus,
+          outcome: "location_unavailable",
+        });
 
         return failure(
           "PROMOTER_LOCATION_REQUIRED",
@@ -111,18 +141,15 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
         Number(promoterVenue.geofence_enabled) === 1 &&
         generationDistance < Number(promoterVenue.radius_meters)
       ) {
-        await env.DB.prepare(`
-          INSERT INTO promoter_qr_generation_attempts (
-            promoter_id, latitude, longitude, accuracy_meters,
-            distance_meters, location_status, outcome
-          ) VALUES (?, ?, ?, ?, ?, 'captured', 'blocked_inside_geofence')
-        `).bind(
+        await recordGenerationAttempt(env, {
           promoterId,
           latitude,
           longitude,
-          Number.isFinite(accuracyMeters) ? accuracyMeters : null,
-          generationDistance,
-        ).run();
+          accuracyMeters: Number.isFinite(accuracyMeters) ? accuracyMeters : null,
+          distanceMeters: generationDistance,
+          locationStatus: "captured",
+          outcome: "blocked_inside_geofence",
+        });
 
         return failure(
           "PROMOTER_INSIDE_GEOFENCE",
@@ -158,6 +185,17 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     `).bind(promoterId).first<PromoterPassRow>();
 
     if (!promoter) {
+      if (!isSpecialEvent) {
+        await recordGenerationAttempt(env, {
+          promoterId,
+          latitude,
+          longitude,
+          accuracyMeters: Number.isFinite(accuracyMeters) ? accuracyMeters : null,
+          distanceMeters: generationDistance,
+          locationStatus: "captured",
+          outcome: "pass_limit_reached",
+        });
+      }
       return failure(
         "PASS_LIMIT_REACHED",
         "No QR passes remain. Passes reset after the configured interval.",
@@ -167,6 +205,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
 
     const token = crypto.randomUUID();
 
+    let insertedQrCodeId: number | null = null;
     try {
       const insertResult = await env.DB.prepare(`
         INSERT INTO qr_codes (
@@ -181,28 +220,51 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
         isSpecialEvent ? eventName : null,
         isSpecialEvent ? 1 : 0,
       ).run();
+      insertedQrCodeId = Number(insertResult.meta.last_row_id);
 
       if (!isSpecialEvent) {
-        await env.DB.prepare(`
-          INSERT INTO promoter_qr_generation_attempts (
-            promoter_id, qr_code_id, latitude, longitude, accuracy_meters,
-            distance_meters, location_status, outcome
-          ) VALUES (?, ?, ?, ?, ?, ?, 'captured', 'generated')
-        `).bind(
+        await recordGenerationAttempt(env, {
           promoterId,
-          insertResult.meta.last_row_id,
+          qrCodeId: insertedQrCodeId,
           latitude,
           longitude,
-          Number.isFinite(accuracyMeters) ? accuracyMeters : null,
-          generationDistance,
-        ).run();
+          accuracyMeters: Number.isFinite(accuracyMeters) ? accuracyMeters : null,
+          distanceMeters: generationDistance,
+          locationStatus: "captured",
+          outcome: "generated",
+        });
       }
     } catch (error) {
-      await env.DB.prepare(`
-        UPDATE promoters
-        SET passes_used = MAX(passes_used - 1, 0)
-        WHERE id = ?
-      `).bind(promoterId).run();
+      const rollbackStatements = [];
+      if (insertedQrCodeId !== null) {
+        rollbackStatements.push(
+          env.DB.prepare("DELETE FROM qr_codes WHERE id = ?").bind(insertedQrCodeId),
+        );
+      }
+      rollbackStatements.push(
+        env.DB.prepare(`
+          UPDATE promoters
+          SET passes_used = MAX(passes_used - 1, 0)
+          WHERE id = ?
+        `).bind(promoterId),
+      );
+      await env.DB.batch(rollbackStatements);
+
+      if (!isSpecialEvent) {
+        try {
+          await recordGenerationAttempt(env, {
+            promoterId,
+            latitude,
+            longitude,
+            accuracyMeters: Number.isFinite(accuracyMeters) ? accuracyMeters : null,
+            distanceMeters: generationDistance,
+            locationStatus: "captured",
+            outcome: "generation_failed",
+          });
+        } catch (auditError) {
+          console.error("QR generation failure audit could not be saved", auditError);
+        }
+      }
       throw error;
     }
 

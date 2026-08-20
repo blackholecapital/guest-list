@@ -30,6 +30,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
       LEFT JOIN guests g ON g.promoter_id = p.id
         AND g.created_at >= p.stats_reset_at${guestsWindow.clause}
       WHERE v.slug = 'scores-tampa'
+        AND p.promoter_kind = 'regular'
       GROUP BY p.id, p.name, p.slug
       ORDER BY registrations DESC, p.name ASC
     `).bind(...guestsWindow.values).all<PromoterRow>();

@@ -2327,6 +2327,101 @@ header nav,
   margin-bottom: 18px;
 }
 
+.temporary-promoters-card {
+  padding: 26px;
+  margin-bottom: 18px;
+}
+
+.temporary-promoter-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.temporary-promoter-bubble {
+  display: grid;
+  gap: 9px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: #0c0c0c;
+}
+
+.temporary-promoter-bubble.is-active {
+  border-color: var(--gold);
+  box-shadow: inset 0 0 0 1px rgba(242, 193, 78, 0.2);
+}
+
+.temporary-promoter-bubble input {
+  min-width: 0;
+  width: 100%;
+}
+
+.event-assignment-fieldset {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+
+.event-assignment-fieldset legend {
+  padding: 0 8px;
+  color: var(--gold);
+  font-weight: 800;
+}
+
+.event-assignment-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.event-assignment-option {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 9px;
+  padding: 12px;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  background: #111;
+  cursor: pointer;
+}
+
+.event-assignment-option input {
+  flex: 0 0 auto;
+}
+
+.event-assignment-option.temporary {
+  border-color: rgba(242, 193, 78, 0.45);
+}
+
+.created-event-result {
+  display: grid;
+  gap: 16px;
+  margin-top: 22px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: #0c0c0c;
+}
+
+.event-assignment-qr-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.event-assignment-qr-grid article {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+}
+
+.event-assignment-qr-grid .event-qr-frame img {
+  width: 140px;
+  height: 140px;
+}
+
 .event-qr-result {
   margin-top: 24px;
   display: grid;
@@ -2378,6 +2473,13 @@ header nav,
   background: #0c0c0c;
 }
 
+.special-event-group {
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: #0c0c0c;
+}
+
 .special-event-details {
   min-width: 0;
 }
@@ -2412,6 +2514,91 @@ header nav,
 .special-event-funnel small,
 .special-event-funnel strong {
   display: block;
+}
+
+.event-breakdown-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.event-breakdown-card {
+  padding: 14px;
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  background: #141414;
+}
+
+.event-breakdown-head {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.event-qr-frame.compact {
+  padding: 5px;
+  border-width: 3px;
+  border-color: var(--gold);
+  border-radius: 10px;
+}
+
+.event-qr-frame.compact img {
+  width: 82px;
+  height: 82px;
+}
+
+.event-breakdown-head h4 {
+  margin: 2px 0 6px;
+}
+
+.event-breakdown-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.event-breakdown-stats span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.event-breakdown-stats strong {
+  display: block;
+  margin-top: 3px;
+  color: white;
+  font-size: 17px;
+}
+
+.promoter-assigned-events {
+  margin: 32px 0;
+  padding-top: 26px;
+  border-top: 1px solid var(--border);
+}
+
+.promoter-event-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.promoter-event-grid article {
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+  padding: 16px;
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  background: #0c0c0c;
+}
+
+.promoter-event-grid h3 {
+  margin: 0;
+}
+
+.promoter-event-grid small {
+  color: var(--muted);
 }
 
 .special-event-funnel small {
@@ -2630,6 +2817,23 @@ header nav,
 }
 
 @media (max-width: 800px) {
+  .temporary-promoter-grid,
+  .event-assignment-grid,
+  .event-assignment-qr-grid,
+  .event-breakdown-grid,
+  .promoter-event-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .event-breakdown-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .event-assignment-qr-grid .event-qr-frame img {
+    width: 170px;
+    height: 170px;
+  }
+
   .special-event-item {
     grid-template-columns: 1fr;
   }

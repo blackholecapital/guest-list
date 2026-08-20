@@ -760,11 +760,17 @@ export function PromoterAccountPage() {
 export function PromoterPage({
   promoterSlug,
   qrToken,
+  specialEventId,
+  specialEventName,
+  promoterDisplayName,
 }: {
   promoterSlug: string;
   qrToken?: string;
+  specialEventId?: number;
+  specialEventName?: string;
+  promoterDisplayName?: string;
 }) {
-  const [promoterName, setPromoterName] = useState(promoterSlug);
+  const [promoterName, setPromoterName] = useState(promoterDisplayName ?? promoterSlug);
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -831,6 +837,7 @@ export function PromoterPage({
       body: JSON.stringify({
         promoterSlug: promoterSlug ?? "",
         qrToken,
+        specialEventId,
         name: name.trim(),
         phone,
         partySize,
@@ -926,6 +933,7 @@ export function PromoterPage({
           <div className="signup-form-panel">
             <p className="eyebrow">Guest list access</p>
             <h1>Join Scores Tampa</h1>
+            {specialEventName && <div className="notice-box event-registration-banner">Special Event: {specialEventName}</div>}
             <p className="promoter-label">
               Promoter: <strong>{promoterName}</strong>
             </p>
@@ -2492,16 +2500,21 @@ export function AdminPage() {
     inviteUrl?: string;
   }>>({});
   const [exportingStats, setExportingStats] = useState(false);
-  const [eventPromoterId, setEventPromoterId] = useState("1");
+  const [selectedEventPromoterIds, setSelectedEventPromoterIds] = useState<number[]>([]);
   const [eventName, setEventName] = useState("");
   const [eventExpiresOn, setEventExpiresOn] = useState(() => dateInputValue(14));
   const [specialEvents, setSpecialEvents] = useState<any[]>([]);
+  const [temporaryPromoters, setTemporaryPromoters] = useState<Array<{
+    id: number;
+    slug: string;
+    name: string;
+    active: boolean;
+    slot: number;
+  }>>([]);
+  const [savingTemporaryId, setSavingTemporaryId] = useState<number | null>(null);
+  const [temporaryMessage, setTemporaryMessage] = useState("");
   const [deletingEventId, setDeletingEventId] = useState<number | null>(null);
-  const [eventQr, setEventQr] = useState<{
-    url: string;
-    qrCode: string;
-    expiresAt: string;
-  } | null>(null);
+  const [eventQr, setEventQr] = useState<any>(null);
   const [eventQrMessage, setEventQrMessage] = useState("");
   const [generatingEventQr, setGeneratingEventQr] = useState(false);
 
@@ -2509,6 +2522,15 @@ export function AdminPage() {
     const result = await api<any>("/api/event-qrs");
     if (!("error" in result) && Array.isArray(result.data?.events)) {
       setSpecialEvents(result.data.events);
+      return result.data.events as any[];
+    }
+    return [];
+  }, []);
+
+  const loadTemporaryPromoters = useCallback(async () => {
+    const result = await api<any>("/api/temporary-promoters");
+    if (!("error" in result) && Array.isArray(result.data?.promoters)) {
+      setTemporaryPromoters(result.data.promoters);
     }
   }, []);
 
@@ -2575,6 +2597,7 @@ export function AdminPage() {
 
   useEffect(() => {
     void loadSpecialEvents();
+    void loadTemporaryPromoters();
 
     void api<any>("/api/demo-settings").then((r)=>{
       if("error" in r) return;
@@ -2622,7 +2645,7 @@ export function AdminPage() {
         }),
       );
     });
-  }, [loadSpecialEvents]);
+  }, [loadSpecialEvents, loadTemporaryPromoters]);
 
   function updateVenue(
     field: keyof typeof venue,
@@ -2920,6 +2943,35 @@ export function AdminPage() {
     }
   }
 
+  function toggleEventPromoter(promoterId: number) {
+    setSelectedEventPromoterIds(current =>
+      current.includes(promoterId)
+        ? current.filter(id => id !== promoterId)
+        : [...current, promoterId],
+    );
+  }
+
+  async function saveTemporaryPromoter(promoter: (typeof temporaryPromoters)[number]) {
+    setSavingTemporaryId(promoter.id);
+    setTemporaryMessage("");
+    const result = await api<any>("/api/temporary-promoters", {
+      method: "POST",
+      body: JSON.stringify({ id: promoter.id, name: promoter.name }),
+    });
+    setSavingTemporaryId(null);
+    if ("error" in result) {
+      setTemporaryMessage(result.error.message);
+      return;
+    }
+    setTemporaryPromoters(current => current.map(item =>
+      item.id === promoter.id ? result.data.promoter : item,
+    ));
+    if (!result.data.promoter.active) {
+      setSelectedEventPromoterIds(current => current.filter(id => id !== promoter.id));
+    }
+    setTemporaryMessage(`${result.data.promoter.active ? result.data.promoter.name : `Temporary ${result.data.promoter.slot}`} saved.`);
+  }
+
   async function generateEventQR(event: FormEvent) {
     event.preventDefault();
     setGeneratingEventQr(true);
@@ -2929,14 +2981,12 @@ export function AdminPage() {
     const expiration = new Date(`${eventExpiresOn}T23:59:59`);
 
     try {
-      const result = await api<any>("/api/generate-qr", {
+      const result = await api<any>("/api/event-qrs", {
         method: "POST",
         body: JSON.stringify({
-          promoterId: Number(eventPromoterId),
+          promoterIds: selectedEventPromoterIds,
           expiresAt: expiration.toISOString(),
-          maxUses: 10000,
-          eventName: eventName.trim(),
-          isSpecialEvent: true,
+          name: eventName.trim(),
         }),
       });
 
@@ -2945,16 +2995,13 @@ export function AdminPage() {
         return;
       }
 
-      setEventQr({
-        url: String(result.data.url),
-        qrCode: String(result.data.qrCode),
-        expiresAt: String(result.data.expiresAt),
-      });
+      const events = await loadSpecialEvents();
+      setEventQr(events.find(item => item.id === Number(result.data.eventId)) ?? null);
       setEventQrMessage(
-        `Event QR created. It expires after ${eventExpiresOn}.`,
+        `Event created with ${Number(result.data.assignmentsCreated)} attributed promoter link${Number(result.data.assignmentsCreated) === 1 ? "" : "s"}.`,
       );
       setEventName("");
-      await loadSpecialEvents();
+      setSelectedEventPromoterIds([]);
     } catch {
       setEventQrMessage("The event QR code could not be generated.");
     } finally {
@@ -3099,14 +3146,43 @@ export function AdminPage() {
           </button>
         </div>
 
+        <section className="data-card temporary-promoters-card">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">Event staffing</p>
+              <h2>Temporary Promoters 1–10</h2>
+              <p className="muted">Enter a name to activate a slot. Clear the name and save to deactivate it.</p>
+            </div>
+          </div>
+          <div className="temporary-promoter-grid">
+            {temporaryPromoters.map(promoter => (
+              <article className={`temporary-promoter-bubble ${promoter.active ? "is-active" : ""}`} key={promoter.id}>
+                <strong>Temporary {promoter.slot}</strong>
+                <input
+                  aria-label={`Temporary promoter ${promoter.slot} name`}
+                  placeholder="Enter name"
+                  maxLength={80}
+                  value={promoter.active ? promoter.name : promoter.name.startsWith("Temporary ") ? "" : promoter.name}
+                  onChange={event => setTemporaryPromoters(current => current.map(item =>
+                    item.id === promoter.id ? { ...item, name: event.target.value } : item,
+                  ))}
+                />
+                <button className="secondary-button compact-button" type="button" disabled={savingTemporaryId === promoter.id} onClick={() => void saveTemporaryPromoter(promoter)}>
+                  {savingTemporaryId === promoter.id ? "Saving..." : "Save"}
+                </button>
+              </article>
+            ))}
+          </div>
+          {temporaryMessage && <div className="notice-box">{temporaryMessage}</div>}
+        </section>
+
         <form className="data-card event-qr-card" onSubmit={generateEventQR}>
           <div className="section-heading">
             <div>
               <p className="eyebrow">Special event flyers</p>
-              <h2>Expiring QR Code</h2>
+              <h2>Attributed Event Flyer Links</h2>
               <p className="muted">
-                Create one reusable flyer code that stops accepting guests after
-                the selected date.
+                Assign the same event to permanent and temporary promoters. Each receives a persistent, screenshot-ready QR link with separate analytics.
               </p>
             </div>
           </div>
@@ -3125,20 +3201,6 @@ export function AdminPage() {
             </label>
 
             <label>
-              Promoter color
-              <select
-                value={eventPromoterId}
-                onChange={(event) => setEventPromoterId(event.target.value)}
-              >
-                {promoterStats.map((promoter) => (
-                  <option key={promoter.promoterId} value={promoter.promoterId}>
-                    {promoter.promoterName}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label>
               Valid through
               <input
                 type="date"
@@ -3149,15 +3211,40 @@ export function AdminPage() {
                 required
               />
             </label>
+
+            <fieldset className="full-field event-assignment-fieldset">
+              <legend>Permanent promoters</legend>
+              <div className="event-assignment-grid">
+                {promoterStats.map(promoter => (
+                  <label className="event-assignment-option" key={promoter.promoterId} style={{ borderColor: promoterColor(promoter.promoterSlug) }}>
+                    <input type="checkbox" checked={selectedEventPromoterIds.includes(promoter.promoterId)} onChange={() => toggleEventPromoter(promoter.promoterId)} />
+                    <span>{promoter.promoterName}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+
+            <fieldset className="full-field event-assignment-fieldset">
+              <legend>Temporary promoters</legend>
+              <div className="event-assignment-grid">
+                {temporaryPromoters.filter(promoter => promoter.active).map(promoter => (
+                  <label className="event-assignment-option temporary" key={promoter.id}>
+                    <input type="checkbox" checked={selectedEventPromoterIds.includes(promoter.id)} onChange={() => toggleEventPromoter(promoter.id)} />
+                    <span>T{promoter.slot}: {promoter.name}</span>
+                  </label>
+                ))}
+                {!temporaryPromoters.some(promoter => promoter.active) && <p className="muted">Save a temporary promoter name above to make that slot assignable.</p>}
+              </div>
+            </fieldset>
           </div>
 
           <div className="admin-form-actions">
             <button
               className="primary-button"
               type="submit"
-              disabled={generatingEventQr}
+              disabled={generatingEventQr || selectedEventPromoterIds.length === 0}
             >
-              {generatingEventQr ? "Generating..." : "Generate Event QR"}
+              {generatingEventQr ? "Creating..." : `Create Event for ${selectedEventPromoterIds.length} Promoter${selectedEventPromoterIds.length === 1 ? "" : "s"}`}
             </button>
           </div>
 
@@ -3168,25 +3255,18 @@ export function AdminPage() {
           )}
 
           {eventQr && (
-            <div className="event-qr-result">
-              <div
-                className="event-qr-frame"
-                style={{
-                  borderColor: promoterColor(
-                    promoterStats.find(
-                      (promoter) => promoter.promoterId === Number(eventPromoterId),
-                    )?.promoterSlug ?? "",
-                  ),
-                }}
-              >
-                <img src={eventQr.qrCode} alt="Expiring event QR code" />
-              </div>
-              <div>
-                <strong>Flyer link</strong>
-                <p className="event-qr-url">{eventQr.url}</p>
-                <small>
-                  Expires {new Date(eventQr.expiresAt).toLocaleString()}
-                </small>
+            <div className="created-event-result">
+              <strong>{eventQr.name}</strong>
+              <div className="event-assignment-qr-grid">
+                {eventQr.assignments?.map((assignment: any) => (
+                  <article key={assignment.promoterId}>
+                    <div className="event-qr-frame" style={{ borderColor: promoterColor(assignment.promoterSlug) }}>
+                      <img src={assignment.qrCode} alt={`${assignment.promoterName} event QR code`} />
+                    </div>
+                    <b>{assignment.promoterName}</b>
+                    <a className="event-qr-url" href={assignment.url} target="_blank" rel="noreferrer">Open link</a>
+                  </article>
+                ))}
               </div>
             </div>
           )}
@@ -3208,18 +3288,11 @@ export function AdminPage() {
           ) : (
             <div className="special-event-list">
               {specialEvents.map((event) => (
-                <article className="special-event-item" key={event.id}>
-                  <div
-                    className="event-qr-frame"
-                    style={{ borderColor: promoterColor(event.promoterSlug) }}
-                  >
-                    <img src={event.qrCode} alt={`${event.name} QR code`} />
-                  </div>
-
+                <article className="special-event-group" key={event.id}>
                   <div className="special-event-details">
                     <div className="special-event-heading">
                       <div>
-                        <p className="eyebrow">{event.promoterName}</p>
+                        <p className="eyebrow">Aggregate event performance</p>
                         <h3>{event.name}</h3>
                         <small>
                           Expires {event.expiresAt ? new Date(event.expiresAt).toLocaleString() : "never"}
@@ -3235,12 +3308,8 @@ export function AdminPage() {
                       </button>
                     </div>
 
-                    <a className="event-qr-url" href={event.url} target="_blank" rel="noreferrer">
-                      {event.url}
-                    </a>
-
                     <div className="special-event-funnel">
-                      <article><small>QR Generated</small><strong>1</strong></article>
+                      <article><small>Promoter Links</small><strong>{event.assignments?.length ?? 0}</strong></article>
                       <article><small>Scanned</small><strong>{event.scans}</strong></article>
                       <article><small>Registered</small><strong>{event.registrations}</strong></article>
                       <article><small>Total Guests</small><strong>{event.totalGuests}</strong></article>
@@ -3248,6 +3317,29 @@ export function AdminPage() {
                       <article><small>Awaiting Check-In</small><strong>{event.awaitingCheckIn}</strong></article>
                       <article><small>Scan → Register</small><strong>{event.registrationConversion}%</strong></article>
                       <article><small>Register → Check In</small><strong>{event.checkInConversion}%</strong></article>
+                    </div>
+
+                    <div className="event-breakdown-grid">
+                      {event.assignments?.map((assignment: any) => (
+                        <article className="event-breakdown-card" key={assignment.promoterId} style={{ borderColor: promoterColor(assignment.promoterSlug) }}>
+                          <div className="event-breakdown-head">
+                            <div className="event-qr-frame compact">
+                              <img src={assignment.qrCode} alt={`${assignment.promoterName} event QR code`} />
+                            </div>
+                            <div>
+                              <p className="eyebrow">{assignment.promoterKind === "temporary" ? `Temporary ${assignment.temporarySlot}` : assignment.promoterSlug}</p>
+                              <h4>{assignment.promoterName}</h4>
+                              <a href={assignment.url} target="_blank" rel="noreferrer">Open attributed link</a>
+                            </div>
+                          </div>
+                          <div className="event-breakdown-stats">
+                            <span>Scans <strong>{assignment.scans}</strong></span>
+                            <span>Registered <strong>{assignment.registrations}</strong></span>
+                            <span>Guests <strong>{assignment.totalGuests}</strong></span>
+                            <span>Checked In <strong>{assignment.checkedIn}</strong></span>
+                          </div>
+                        </article>
+                      ))}
                     </div>
                   </div>
                 </article>
@@ -3914,6 +4006,7 @@ export function PromoterControlPage({ promoterSlug }: { promoterSlug: string }) 
   const [qrImage, setQrImage] = useState("");
   const [qrMessage, setQrMessage] = useState("");
   const [generatingQr, setGeneratingQr] = useState(false);
+  const [assignedEvents, setAssignedEvents] = useState<any[]>([]);
 
   useEffect(() => {
     void api<any>("/api/promoters").then((result) => {
@@ -3932,6 +4025,11 @@ export function PromoterControlPage({ promoterSlug }: { promoterSlug: string }) 
             resetDays: Number(found.reset_days ?? 1),
           });
         }
+      }
+    });
+    void api<any>("/api/promoter-events").then(result => {
+      if (!("error" in result) && Array.isArray(result.data?.events)) {
+        setAssignedEvents(result.data.events);
       }
     });
   }, [promoterSlug]);
@@ -4052,6 +4150,28 @@ export function PromoterControlPage({ promoterSlug }: { promoterSlug: string }) 
             </div>
           )}
 
+          {assignedEvents.length > 0 && (
+            <section className="promoter-assigned-events">
+              <div>
+                <p className="eyebrow">Assigned special events</p>
+                <h2>Screenshot & Share</h2>
+                <p className="muted">These event codes do not use your passes and do not require location to generate.</p>
+              </div>
+              <div className="promoter-event-grid">
+                {assignedEvents.map(event => (
+                  <article key={event.id} style={{ borderColor: promoterColor(promoterSlug) }}>
+                    <h3>{event.name}</h3>
+                    <div className="event-qr-frame" style={{ borderColor: promoterColor(promoterSlug) }}>
+                      <img src={event.qrCode} alt={`${event.name} QR code`} />
+                    </div>
+                    <a className="event-qr-url" href={event.url} target="_blank" rel="noreferrer">Open event link</a>
+                    <small>Valid through {new Date(event.expiresAt).toLocaleString()}</small>
+                  </article>
+                ))}
+              </div>
+            </section>
+          )}
+
           <VipPackages />
         </section>
       </main>
@@ -4109,6 +4229,30 @@ export function JoinTokenPage({ token }: { token: string }) {
       qrToken={token}
     />
   );
+}
+
+export function EventJoinPage({ eventId, promoterSlug }: { eventId: number; promoterSlug: string }) {
+  const [data, setData] = useState<any>(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const params = new URLSearchParams({ eventId: String(eventId), promoterSlug });
+    void api<any>(`/api/event-lookup?${params}`).then(result => {
+      if ("error" in result) {
+        setError(result.error.message);
+        return;
+      }
+      setData(result.data);
+    });
+  }, [eventId, promoterSlug]);
+
+  if (error) {
+    return <Shell compact><main className="page narrow centered"><section className="hero-card expired-pass-card"><p className="eyebrow">Special event unavailable</p><h1>{error}</h1></section></main></Shell>;
+  }
+  if (!data) {
+    return <Shell compact><main className="page narrow centered"><section className="hero-card"><h1>Loading special event...</h1></section></main></Shell>;
+  }
+  return <PromoterPage promoterSlug={data.promoterSlug} promoterDisplayName={data.promoterName} specialEventId={data.eventId} specialEventName={data.eventName} />;
 }
 
 export function NotFoundPage() {

@@ -1,6 +1,7 @@
 import {
   AdminPage,
   DoorInstructionsPage,
+  EventJoinPage,
   GuestListPage,
   JoinTokenPage,
   LoginPage,
@@ -39,6 +40,7 @@ export default function App() {
 
   const isPublicGuestPath =
     path.startsWith("/join/") ||
+    path.startsWith("/event/") ||
     path.startsWith("/p/") ||
     path === "/location-help" ||
     path === "/promoter-account" ||
@@ -122,6 +124,15 @@ export default function App() {
 
     if (token) {
       return <JoinTokenPage token={token} />;
+    }
+  }
+
+  if (path.startsWith("/event/")) {
+    const [, , eventIdValue, promoterSlugValue] = path.split("/");
+    const eventId = Number(eventIdValue);
+    const promoterSlug = promoterSlugValue?.toLowerCase();
+    if (Number.isInteger(eventId) && eventId > 0 && promoterSlug) {
+      return <EventJoinPage eventId={eventId} promoterSlug={promoterSlug} />;
     }
   }
 

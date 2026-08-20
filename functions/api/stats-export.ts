@@ -18,7 +18,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     SELECT g.event_date, g.created_at, p.name AS promoter_name, p.slug AS promoter_slug,
       g.name AS guest_name, g.phone, g.party_size, g.status, g.checked_in_at,
       ROUND(g.calculated_distance_meters, 1) AS distance_meters,
-      g.location_exception, g.confirmation_code, g.qr_token
+      g.location_exception, g.confirmation_code, g.qr_token, g.special_event_id
     FROM guests g
     JOIN promoters p ON p.id = g.promoter_id
     JOIN venues v ON v.id = g.venue_id
@@ -29,12 +29,13 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   const headers = [
     "event_date", "registered_at", "promoter", "promoter_slug", "guest_name", "phone",
     "party_size", "status", "checked_in_at", "distance_meters", "location_exception",
-    "confirmation_code", "qr_token",
+    "confirmation_code", "qr_token", "special_event_id",
   ];
   const rows = (result.results ?? []).map(row => [
     row.event_date, row.created_at, row.promoter_name, row.promoter_slug, row.guest_name, row.phone,
     row.party_size, row.status, row.checked_in_at, row.distance_meters,
     Number(row.location_exception) === 1 ? "yes" : "no", row.confirmation_code, row.qr_token,
+    row.special_event_id,
   ]);
   const content = [headers, ...rows].map(row => row.map(csv).join(",")).join("\r\n");
   const filename = `scores-guest-list-${reporting.range}-${reporting.anchorDate}.csv`;

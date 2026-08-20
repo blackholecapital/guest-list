@@ -34,6 +34,7 @@ interface CheckInBody {
   locationStatus: "captured" | "not_required";
   smsOptIn?: boolean;
   qrToken?: string;
+  specialEventId?: number;
 }
 
 function parseBody(
@@ -70,6 +71,9 @@ function parseBody(
     typeof input.qrToken === "string"
       ? input.qrToken
       : undefined;
+  const specialEventId = input.specialEventId === undefined
+    ? undefined
+    : Number(input.specialEventId);
 
   if (
     !promoterSlug ||
@@ -91,7 +95,8 @@ function parseBody(
         !Number.isFinite(accuracyMeters) ||
         accuracyMeters < 0
       )
-    )
+    ) ||
+    (specialEventId !== undefined && (!Number.isInteger(specialEventId) || specialEventId <= 0))
   ) {
     return null;
   }
@@ -107,6 +112,7 @@ function parseBody(
     locationStatus: latitude === undefined ? "not_required" : "captured",
     smsOptIn,
     qrToken,
+    specialEventId,
   };
 }
 
@@ -207,6 +213,22 @@ export const onRequestPost: PagesFunction<Env> = async ({
         "This promoter link is currently inactive.",
         403,
       );
+    }
+
+    if (body.specialEventId !== undefined) {
+      const assignment = await env.DB.prepare(`
+        SELECT a.id
+        FROM special_event_assignments a
+        JOIN special_events e ON e.id = a.event_id
+        WHERE a.event_id = ?
+          AND a.promoter_id = ?
+          AND e.deleted_at IS NULL
+          AND e.expires_at > CURRENT_TIMESTAMP
+        LIMIT 1
+      `).bind(body.specialEventId, promoter.id).first<{ id: number }>();
+      if (!assignment) {
+        return failure("EVENT_UNAVAILABLE", "This special-event link is no longer active.", 410);
+      }
     }
 
     const venue = await env.DB
@@ -315,11 +337,11 @@ export const onRequestPost: PagesFunction<Env> = async ({
           submitted_longitude,
           submitted_accuracy_meters,
           calculated_distance_meters,
-          customer_location_status, event_date,
+          customer_location_status, event_date, special_event_id,
           sms_opt_in,
           qr_token
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `)
       .bind(
         venue.id,
@@ -333,6 +355,7 @@ export const onRequestPost: PagesFunction<Env> = async ({
         distanceMeters ?? -1,
         body.locationStatus,
         eventDate,
+        body.specialEventId ?? null,
         body.smsOptIn ? 1 : 0,
         body.qrToken ?? null,
       )

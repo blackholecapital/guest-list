@@ -44,6 +44,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
             AND q.deleted_at IS NULL
             AND q.created_at >= p.stats_reset_at) AS qr_scanned
       FROM promoters p
+      WHERE p.promoter_kind = 'regular'
       ORDER BY p.id
     `).all();
 
@@ -90,7 +91,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
           reset_days = ?,
           passes_used = MIN(passes_used, ?),
           last_reset_at = COALESCE(last_reset_at, CURRENT_TIMESTAMP)
-      WHERE id = ?
+      WHERE id = ? AND promoter_kind = 'regular'
       RETURNING
         id,
         slug,

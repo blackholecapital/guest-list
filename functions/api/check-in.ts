@@ -28,9 +28,10 @@ interface CheckInBody {
   name: string;
   phone: string;
   partySize: number;
-  latitude: number;
-  longitude: number;
+  latitude?: number;
+  longitude?: number;
   accuracyMeters?: number;
+  locationStatus: "captured" | "not_required";
   smsOptIn?: boolean;
   qrToken?: string;
 }
@@ -54,8 +55,10 @@ function parseBody(
       : "";
 
   const partySize = Number(input.partySize);
-  const latitude = Number(input.latitude);
-  const longitude = Number(input.longitude);
+  const hasLatitude = typeof input.latitude === "number";
+  const hasLongitude = typeof input.longitude === "number";
+  const latitude = hasLatitude ? Number(input.latitude) : undefined;
+  const longitude = hasLongitude ? Number(input.longitude) : undefined;
 
   const accuracyMeters =
     input.accuracyMeters === undefined
@@ -75,12 +78,13 @@ function parseBody(
     !Number.isInteger(partySize) ||
     partySize < 1 ||
     partySize > 20 ||
-    !Number.isFinite(latitude) ||
-    latitude < -90 ||
-    latitude > 90 ||
-    !Number.isFinite(longitude) ||
-    longitude < -180 ||
-    longitude > 180 ||
+    hasLatitude !== hasLongitude ||
+    (latitude !== undefined && (
+      !Number.isFinite(latitude) || latitude < -90 || latitude > 90
+    )) ||
+    (longitude !== undefined && (
+      !Number.isFinite(longitude) || longitude < -180 || longitude > 180
+    )) ||
     (
       accuracyMeters !== undefined &&
       (
@@ -100,6 +104,7 @@ function parseBody(
     latitude,
     longitude,
     accuracyMeters,
+    locationStatus: latitude === undefined ? "not_required" : "captured",
     smsOptIn,
     qrToken,
   };
@@ -124,7 +129,7 @@ export const onRequestPost: PagesFunction<Env> = async ({
   if (!body) {
     return failure(
       "VALIDATION_ERROR",
-      "Please provide a valid name, phone number, party size, promoter, and location.",
+      "Please provide a valid name, phone number, party size, and promoter.",
       400,
     );
   }
@@ -213,13 +218,14 @@ export const onRequestPost: PagesFunction<Env> = async ({
           address,
           latitude,
           longitude,
-          radius_meters
+          radius_meters,
+          customer_geofence_enabled
         FROM venues
         WHERE id = ?
         LIMIT 1
       `)
       .bind(promoter.venue_id)
-      .first<VenueRow>();
+      .first<VenueRow & { customer_geofence_enabled: number }>();
 
     if (!venue) {
       return failure(
@@ -229,14 +235,32 @@ export const onRequestPost: PagesFunction<Env> = async ({
       );
     }
 
-    const distanceMeters = haversineMeters(
-      body.latitude,
-      body.longitude,
-      venue.latitude,
-      venue.longitude,
-    );
+    const customerGeofenceEnabled = Number(venue.customer_geofence_enabled) === 1;
+    const hasCustomerLocation = body.latitude !== undefined && body.longitude !== undefined;
 
-    if (distanceMeters < venue.radius_meters) {
+    if (customerGeofenceEnabled && !hasCustomerLocation) {
+      return failure(
+        "CUSTOMER_LOCATION_REQUIRED",
+        "Location Services must be enabled to join this guest list.",
+        403,
+      );
+    }
+
+    let distanceMeters: number | null = null;
+    if (body.latitude !== undefined && body.longitude !== undefined) {
+      distanceMeters = haversineMeters(
+        body.latitude,
+        body.longitude,
+        venue.latitude,
+        venue.longitude,
+      );
+    }
+
+    if (
+      customerGeofenceEnabled &&
+      distanceMeters !== null &&
+      distanceMeters < venue.radius_meters
+    ) {
       return failure(
         "TOO_CLOSE_TO_VENUE",
         "Guest-list registration is not available at the venue.",
@@ -291,11 +315,11 @@ export const onRequestPost: PagesFunction<Env> = async ({
           submitted_longitude,
           submitted_accuracy_meters,
           calculated_distance_meters,
-          event_date,
+          customer_location_status, event_date,
           sms_opt_in,
           qr_token
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `)
       .bind(
         venue.id,
@@ -303,10 +327,11 @@ export const onRequestPost: PagesFunction<Env> = async ({
         body.name,
         body.phone,
         body.partySize,
-        body.latitude,
-        body.longitude,
+        body.latitude ?? 0,
+        body.longitude ?? 0,
         body.accuracyMeters ?? null,
-        distanceMeters,
+        distanceMeters ?? -1,
+        body.locationStatus,
         eventDate,
         body.smsOptIn ? 1 : 0,
         body.qrToken ?? null,
@@ -333,7 +358,8 @@ export const onRequestPost: PagesFunction<Env> = async ({
       guestId: result.meta.last_row_id,
       venue: venue.name,
       promoter: promoter.name,
-      distanceMeters: Math.round(distanceMeters),
+      distanceMeters: distanceMeters === null ? null : Math.round(distanceMeters),
+      customerGeofenceEnabled,
       status: "registered",
     }, 201);
   } catch (error) {

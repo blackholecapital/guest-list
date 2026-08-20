@@ -110,6 +110,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
         SELECT id, slug, name, active, pass_limit, reset_days
         FROM promoters
         WHERE venue_id = ?
+          AND promoter_kind = 'regular'
         ORDER BY name ASC
       `)
       .bind(venue.id)

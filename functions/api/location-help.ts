@@ -93,8 +93,9 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
         venue_id, promoter_id, name, phone, party_size,
         submitted_latitude, submitted_longitude, submitted_accuracy_meters,
         calculated_distance_meters, event_date, sms_opt_in, qr_token,
-        location_exception, exception_reason, confirmation_code
-      ) VALUES (?, ?, ?, ?, 1, 0, 0, NULL, 0, ?, ?, ?, 1, ?, ?)
+        location_exception, exception_reason, confirmation_code,
+        customer_location_status
+      ) VALUES (?, ?, ?, ?, 1, 0, 0, NULL, 0, ?, ?, ?, 1, ?, ?, 'location_help')
     `).bind(
       promoter.venue_id,
       promoter.id,

@@ -775,6 +775,7 @@ export function PromoterPage({
   >("idle");
   const [message, setMessage] = useState("");
   const [locationAssistanceEnabled, setLocationAssistanceEnabled] = useState(false);
+  const [customerGeofenceEnabled, setCustomerGeofenceEnabled] = useState(true);
   const helpUrl = `/location-help?promoter=${encodeURIComponent(promoterSlug)}${
     qrToken ? `&token=${encodeURIComponent(qrToken)}` : ""
   }`;
@@ -805,8 +806,48 @@ export function PromoterPage({
       setLocationAssistanceEnabled(
         result.data?.venue?.locationAssistanceEnabled === true,
       );
+      setCustomerGeofenceEnabled(
+        result.data?.venue?.customerGeofenceEnabled !== false,
+      );
     });
   }, []);
+
+  async function submitRegistration(location?: {
+    latitude: number;
+    longitude: number;
+    accuracyMeters: number;
+  }) {
+    setStatus("submitting");
+    setMessage("Adding you to the guest list...");
+
+    const result = await api<{
+      guestId: number;
+      venue: string;
+      promoter: string;
+      distanceMeters: number | null;
+      status: string;
+    }>("/api/check-in", {
+      method: "POST",
+      body: JSON.stringify({
+        promoterSlug: promoterSlug ?? "",
+        qrToken,
+        name: name.trim(),
+        phone,
+        partySize,
+        smsOptIn,
+        ...location,
+      }),
+    });
+
+    if ("error" in result) {
+      setStatus("error");
+      setMessage(result.error.message);
+      return;
+    }
+
+    setStatus("success");
+    setMessage(`You're on the guest list through ${result.data.promoter}.`);
+  }
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -814,6 +855,11 @@ export function PromoterPage({
     if (!name.trim() || phone.replace(/\D/g, "").length < 10) {
       setStatus("error");
       setMessage("Enter a valid name and phone number.");
+      return;
+    }
+
+    if (!customerGeofenceEnabled) {
+      await submitRegistration();
       return;
     }
 
@@ -828,40 +874,11 @@ export function PromoterPage({
 
     navigator.geolocation.getCurrentPosition(
       async (position) => {
-        setStatus("submitting");
-        setMessage("Adding you to the guest list...");
-
-        const result = await api<{
-          guestId: number;
-          venue: string;
-          promoter: string;
-          distanceMeters: number;
-          status: string;
-        }>("/api/check-in", {
-          method: "POST",
-          body: JSON.stringify({
-            promoterSlug: promoterSlug ?? "",
-            qrToken,
-            name: name.trim(),
-            phone,
-            partySize,
-            smsOptIn,
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-            accuracyMeters: position.coords.accuracy,
-          }),
+        await submitRegistration({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracyMeters: position.coords.accuracy,
         });
-
-        if ("error" in result) {
-          setStatus("error");
-          setMessage(result.error.message);
-          return;
-        }
-
-        setStatus("success");
-        setMessage(
-          `You're on the guest list through ${result.data.promoter}.`,
-        );
       },
       (error) => {
         setStatus("error");
@@ -959,11 +976,15 @@ export function PromoterPage({
               <div className="location-note">
                 <span aria-hidden="true">⌖</span>
                 <div>
-                  <p>Location is used to enforce the venue registration rules.</p>
-                  <p>
-                    Your phone's Location Services must be enabled to use this function.
-                  </p>
-                  {locationAssistanceEnabled && (
+                  {customerGeofenceEnabled ? (
+                    <>
+                      <p>Location is used to enforce the venue registration rules.</p>
+                      <p>Your phone's Location Services must be enabled to use this function.</p>
+                    </>
+                  ) : (
+                    <p>Location verification is currently disabled by the venue. You can register without sharing your location.</p>
+                  )}
+                  {customerGeofenceEnabled && locationAssistanceEnabled && (
                     <a className="location-help-link" href={helpUrl}>
                       Having location problems? Click here.
                     </a>
@@ -1694,6 +1715,150 @@ function RegistrationMap({ promoters, reportingQuery }: { promoters: any[]; repo
   );
 }
 
+function generationOutcomeLabel(outcome: string) {
+  const labels: Record<string, string> = {
+    generated: "QR generated",
+    blocked_inside_geofence: "Blocked inside geofence",
+    location_unavailable: "Location unavailable",
+    pass_limit_reached: "Pass limit reached",
+    generation_failed: "Generation failed",
+  };
+  return labels[outcome] ?? outcome.replaceAll("_", " ");
+}
+
+function PromoterGenerationMap() {
+  const mapElementId = "promoter-generation-map";
+  const [mapData, setMapData] = useState<any>(null);
+  const [mapMessage, setMapMessage] = useState("Loading promoter QR activity...");
+
+  useEffect(() => {
+    let cancelled = false;
+    let map: any = null;
+
+    void Promise.all([api<any>("/api/promoter-generation-map"), loadLeaflet()])
+      .then(([result, L]) => {
+        if (cancelled) return;
+        if ("error" in result) {
+          setMapMessage(result.error.message);
+          return;
+        }
+
+        const payload = result.data;
+        setMapData(payload);
+        setMapMessage("");
+        const element = document.getElementById(mapElementId);
+        if (!element) return;
+
+        const venue = payload.venue;
+        map = L.map(element, { scrollWheelZoom: false, minZoom: 7, maxZoom: 18 });
+        map.setView([venue.latitude, venue.longitude], 11);
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+          maxZoom: 19,
+        }).addTo(map);
+
+        L.circle([venue.latitude, venue.longitude], {
+          radius: venue.radiusMeters,
+          color: "#ef4444",
+          fillColor: "#ef4444",
+          fillOpacity: 0.08,
+          weight: 2,
+        }).addTo(map).bindTooltip("Venue restricted radius");
+
+        const coordinates: [number, number][] = [];
+        for (const attempt of payload.attempts) {
+          if (attempt.latitude === null || attempt.longitude === null) continue;
+          coordinates.push([attempt.latitude, attempt.longitude]);
+          const markerColor = attempt.outcome === "generated"
+            ? promoterColor(attempt.promoterSlug)
+            : attempt.outcome === "blocked_inside_geofence" ? "#ef4444" : "#f2c14e";
+          const marker = L.circleMarker([attempt.latitude, attempt.longitude], {
+            radius: attempt.outcome === "generated" ? 7 : 9,
+            color: "#ffffff",
+            weight: 1,
+            fillColor: markerColor,
+            fillOpacity: 0.92,
+          }).addTo(map);
+          const tooltip = document.createElement("div");
+          tooltip.append(
+            attempt.promoterName,
+            document.createElement("br"),
+            generationOutcomeLabel(attempt.outcome),
+            document.createElement("br"),
+            new Date(attempt.createdAt).toLocaleString(),
+          );
+          if (attempt.qrCodeId !== null) {
+            tooltip.append(document.createElement("br"), `QR #${attempt.qrCodeId}`);
+          }
+          marker.bindTooltip(tooltip);
+        }
+
+        if (coordinates.length > 1) {
+          map.fitBounds(coordinates, { padding: [28, 28], maxZoom: 14 });
+        } else if (coordinates.length === 1) {
+          map.setView(coordinates[0], 13);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setMapMessage("Promoter QR activity could not be loaded.");
+      });
+
+    return () => {
+      cancelled = true;
+      if (map) map.remove();
+    };
+  }, []);
+
+  const summary = mapData?.summary;
+  const recentAttempts = Array.isArray(mapData?.attempts)
+    ? mapData.attempts.slice(0, 20)
+    : [];
+
+  return (
+    <section className="data-card promoter-generation-map-card">
+      <div className="section-heading registration-map-heading">
+        <div>
+          <p className="eyebrow">Promoter token audit</p>
+          <h2>QR Generation Map</h2>
+          <p className="muted">Every promoter QR-generation attempt is stamped with its outcome, time, and available device location.</p>
+        </div>
+        <div className="generation-map-summary">
+          <span><strong>{summary?.totalAttempts ?? 0}</strong> attempts</span>
+          <span><strong>{summary?.generated ?? 0}</strong> generated</span>
+          <span><strong>{summary?.blocked ?? 0}</strong> blocked</span>
+        </div>
+      </div>
+
+      <div className="registration-map-layout">
+        <div className="registration-map-wrap">
+          <div id={mapElementId} className="registration-map" />
+          {mapMessage && <div className="map-loading">{mapMessage}</div>}
+        </div>
+        <aside className="registration-map-sidebar generation-audit-sidebar">
+          <h3>Recent activity</h3>
+          {recentAttempts.length ? (
+            <div className="generation-audit-list">
+              {recentAttempts.map((attempt: any) => (
+                <div className={`generation-audit-item outcome-${attempt.outcome}`} key={attempt.id}>
+                  <span style={{ background: promoterColor(attempt.promoterSlug) }} />
+                  <div>
+                    <strong>{attempt.promoterName}</strong>
+                    <small>{generationOutcomeLabel(attempt.outcome)}</small>
+                    <small>{new Date(attempt.createdAt).toLocaleString()}</small>
+                  </div>
+                  {attempt.qrCodeId !== null && <b>#{attempt.qrCodeId}</b>}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="muted">No promoter QR attempts have been recorded yet.</p>
+          )}
+        </aside>
+      </div>
+    </section>
+  );
+}
+
 export function StatsPage() {
   const [data, setData] = useState(DEMO_STATS);
   const [promoterGeofenceAttempts, setPromoterGeofenceAttempts] = useState<any[]>([]);
@@ -2305,6 +2470,9 @@ export function AdminPage() {
   const [savingLocationAssistance, setSavingLocationAssistance] = useState(false);
   const [locationAssistanceMessage, setLocationAssistanceMessage] = useState("");
   const [locationAssistanceError, setLocationAssistanceError] = useState(false);
+  const [savingCustomerGeofence, setSavingCustomerGeofence] = useState(false);
+  const [customerGeofenceMessage, setCustomerGeofenceMessage] = useState("");
+  const [customerGeofenceError, setCustomerGeofenceError] = useState(false);
   const [venueConfigLoaded, setVenueConfigLoaded] = useState(false);
   const [venueConfigLoadFailed, setVenueConfigLoadFailed] = useState(false);
   const [promoterStats, setPromoterStats] = useState<AdminPromoter[]>(DEMO_STATS.promoters);
@@ -2353,6 +2521,7 @@ export function AdminPage() {
     radiusMeters: 457,
     customerCooldownDays: 14,
     geofenceEnabled: true,
+    customerGeofenceEnabled: true,
     locationAssistanceEnabled: false,
     weeklyResetDay: 1,
   });
@@ -2391,6 +2560,7 @@ export function AdminPage() {
         radiusMeters: Number(remote.radiusMeters ?? 457),
         customerCooldownDays: Number(remote.customerCooldownDays ?? 14),
         geofenceEnabled: Boolean(remote.geofenceEnabled ?? true),
+        customerGeofenceEnabled: Boolean(remote.customerGeofenceEnabled ?? true),
         locationAssistanceEnabled: Boolean(remote.locationAssistanceEnabled ?? false),
         weeklyResetDay: Number(remote.weeklyResetDay ?? 1),
       });
@@ -2829,6 +2999,7 @@ export function AdminPage() {
           hours,
           customerCooldownDays: venue.customerCooldownDays,
           geofenceEnabled: venue.geofenceEnabled,
+          customerGeofenceEnabled: venue.customerGeofenceEnabled,
           locationAssistanceEnabled: venue.locationAssistanceEnabled,
         }),
       });
@@ -2879,6 +3050,36 @@ export function AdminPage() {
       setLocationAssistanceMessage("Location Assistance could not be updated.");
     } finally {
       setSavingLocationAssistance(false);
+    }
+  }
+
+  async function toggleCustomerGeofence() {
+    const enabled = !venue.customerGeofenceEnabled;
+    setSavingCustomerGeofence(true);
+    setCustomerGeofenceMessage("");
+    setCustomerGeofenceError(false);
+
+    try {
+      const result = await api<any>("/api/customer-geofence", {
+        method: "POST",
+        body: JSON.stringify({ enabled }),
+      });
+      if ("error" in result) {
+        setCustomerGeofenceError(true);
+        setCustomerGeofenceMessage(result.error.message);
+        return;
+      }
+      setVenue(current => ({ ...current, customerGeofenceEnabled: enabled }));
+      setCustomerGeofenceMessage(
+        enabled
+          ? "Customer geofence is ON. Customers must share location and register outside the restricted radius."
+          : "Customer geofence is OFF. Customers can register without sharing location; promoter QR tracking remains active.",
+      );
+    } catch {
+      setCustomerGeofenceError(true);
+      setCustomerGeofenceMessage("Customer geofence could not be updated.");
+    } finally {
+      setSavingCustomerGeofence(false);
     }
   }
 
@@ -3207,7 +3408,7 @@ export function AdminPage() {
             </label>
 
             <label>
-              Geofence protection
+              Promoter QR geofence protection
               <select
                 value={venue.geofenceEnabled ? "on" : "off"}
                 onChange={(event) =>
@@ -3217,10 +3418,51 @@ export function AdminPage() {
                   }))
                 }
               >
-                <option value="on">Enabled</option>
-                <option value="off">Disabled</option>
+                <option value="on">Enabled — block QR generation near venue</option>
+                <option value="off">Disabled — allow QR generation anywhere</option>
               </select>
             </label>
+
+            <button
+              type="button"
+              role="switch"
+              aria-checked={venue.customerGeofenceEnabled}
+              disabled={savingCustomerGeofence || !venueConfigLoaded}
+              className={`feature-switch full-field ${
+                venue.customerGeofenceEnabled ? "is-on" : "is-off"
+              }`}
+              onClick={() => void toggleCustomerGeofence()}
+            >
+              <span className="feature-switch-copy">
+                <strong>Customer Geofence Requirement</strong>
+                <small>
+                  {venue.customerGeofenceEnabled
+                    ? "Customers must share location and register outside the restricted radius."
+                    : "Customers can register without location. Promoter QR location tracking remains active."}
+                </small>
+              </span>
+              <span className="feature-switch-control" aria-hidden="true">
+                <span className="feature-switch-knob" />
+              </span>
+              <span className="feature-switch-status">
+                {venueConfigLoadFailed
+                  ? "Unavailable"
+                  : !venueConfigLoaded
+                    ? "Loading"
+                    : savingCustomerGeofence
+                      ? "Saving"
+                      : venue.customerGeofenceEnabled ? "On" : "Off"}
+              </span>
+            </button>
+
+            {customerGeofenceMessage && (
+              <div
+                className={`${customerGeofenceError ? "error-box" : "success-box"} full-field`}
+                role="status"
+              >
+                {customerGeofenceMessage}
+              </div>
+            )}
 
             <button
               type="button"
@@ -3372,6 +3614,8 @@ export function AdminPage() {
             ))}
           </div>
         </section>
+
+        <PromoterGenerationMap />
 
         <section className="data-card promoter-admin-card">
           <div className="section-heading admin-promoter-heading">

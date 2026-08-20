@@ -27,6 +27,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
       WHERE g.submitted_latitude IS NOT NULL
         AND g.submitted_longitude IS NOT NULL
         AND g.location_exception = 0
+        AND g.customer_location_status = 'captured'
         ${guestWindow.clause}
       UNION ALL
       SELECT

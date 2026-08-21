@@ -1430,6 +1430,11 @@ a.venue-detail:hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
+}
+
+.guest-delete-button {
+  flex: 0 0 auto;
 }
 
 .flag-note {
@@ -1843,6 +1848,15 @@ header nav,
   .promoter-admin-item {
     grid-template-columns: 1fr;
     flex-direction: column;
+  }
+
+  .guest-card-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .guest-delete-button {
+    width: 100%;
   }
 
   .recent-registration-row {

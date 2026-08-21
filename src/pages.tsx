@@ -1268,12 +1268,15 @@ export function LocationHelpPage() {
 }
 
 export function GuestListPage() {
+  const session = getDemoSession();
+  const isAdmin = session?.role === "admin";
   const [guests, setGuests] = useState<DemoGuest[]>(DEMO_GUESTS);
   const [notice, setNotice] = useState<string | null>(
     "Loading live guest-list data...",
   );
   const [filter, setFilter] = useState<"all" | "checked_in" | "pending" | "flagged">("all");
   const [search, setSearch] = useState("");
+  const [deletingGuestId, setDeletingGuestId] = useState<number | null>(null);
 
   const loadGuests = useCallback(async () => {
     try {
@@ -1402,6 +1405,34 @@ export function GuestListPage() {
       }
     } catch {
       setNotice("Guest checked in locally for demo mode.");
+    }
+  }
+
+  async function deleteGuest(guest: DemoGuest) {
+    const confirmed = window.confirm(
+      `Delete ${guest.name} from the guest list?\n\nThis permanently removes the registration and subtracts it from guest, check-in, promoter, event, and conversion statistics. This cannot be undone.`,
+    );
+    if (!confirmed) return;
+
+    setDeletingGuestId(guest.id);
+    setNotice(null);
+    try {
+      const result = await api<any>("/api/guest-delete", {
+        method: "POST",
+        body: JSON.stringify({ guestId: guest.id }),
+      });
+
+      if ("error" in result) {
+        setNotice(result.error.message);
+        return;
+      }
+
+      setGuests(current => current.filter(item => item.id !== guest.id));
+      setNotice(`${guest.name} was deleted. Conversion statistics have been updated.`);
+    } catch {
+      setNotice("The guest could not be deleted. No deletion was confirmed.");
+    } finally {
+      setDeletingGuestId(null);
     }
   }
 
@@ -1551,6 +1582,16 @@ export function GuestListPage() {
                   <span className="status-inline danger-text">
                     ⚑ Geofence red flag
                   </span>
+                )}
+                {isAdmin && (
+                  <button
+                    className="danger-button compact-button guest-delete-button"
+                    type="button"
+                    disabled={deletingGuestId === guest.id}
+                    onClick={() => void deleteGuest(guest)}
+                  >
+                    {deletingGuestId === guest.id ? "Deleting..." : "Delete Guest"}
+                  </button>
                 )}
               </div>
             </article>
@@ -4257,16 +4298,3 @@ export function EventJoinPage({ eventId, promoterSlug }: { eventId: number; prom
 
 export function NotFoundPage() {
   return (
-    <Shell>
-      <main className="page narrow centered">
-        <section className="hero-card">
-          <p className="eyebrow">404</p>
-          <h1>Page not found</h1>
-          <a className="primary-button" href="/">
-            Go Home
-          </a>
-        </section>
-      </main>
-    </Shell>
-  );
-}

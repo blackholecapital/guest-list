@@ -17,6 +17,9 @@ interface GuestRow {
   location_exception: number;
   exception_reason: string | null;
   confirmation_code: string | null;
+  vip_service_name: string | null;
+  vip_discount_percent: number | null;
+  vip_quoted_price_cents: number | null;
 }
 
 export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
@@ -36,6 +39,9 @@ export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
           , g.location_exception
           , g.exception_reason
           , g.confirmation_code
+          , g.vip_service_name
+          , g.vip_discount_percent
+          , g.vip_quoted_price_cents
         FROM guests g
         JOIN promoters p ON p.id = g.promoter_id
         JOIN venues v ON v.id = g.venue_id

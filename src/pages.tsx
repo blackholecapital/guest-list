@@ -65,6 +65,9 @@ type DemoGuest = {
   flagReason: string | null;
   locationException?: boolean;
   confirmationCode?: string | null;
+  vipServiceName?: string | null;
+  vipDiscountPercent?: number;
+  vipQuotedPriceCents?: number;
 };
 
 const MAPS_URL = `https://maps.google.com/?q=${encodeURIComponent(VENUE.address)}`;
@@ -202,7 +205,7 @@ function promoterQrDataUrl(slug: string) {
   return qr.createDataURL(8, 16);
 }
 
-async function api<T>(
+export async function api<T>(
   url: string,
   init?: RequestInit,
 ): Promise<ApiResponse<T>> {
@@ -229,7 +232,7 @@ async function api<T>(
   return body;
 }
 
-function Shell({
+export function Shell({
   children,
   compact = false,
 }: {
@@ -237,6 +240,14 @@ function Shell({
   compact?: boolean;
 }) {
   const session = getDemoSession();
+  const [vipServicesEnabled, setVipServicesEnabled] = useState(false);
+
+  useEffect(() => {
+    if (session?.role !== "promoter" || !session.promoterSlug) return;
+    void api<any>(`/api/vip-services?promoterSlug=${encodeURIComponent(session.promoterSlug)}`).then(result => {
+      setVipServicesEnabled(!("error" in result) && result.data?.enabled === true);
+    });
+  }, [session?.role, session?.promoterSlug]);
 
   return (
     <div className="app-shell">
@@ -261,6 +272,10 @@ function Shell({
             {session.role === "admin" && <a href="/stats">Stats</a>}
             {session.role === "admin" && <a href="/promoters">Promoters</a>}
             {session.role === "admin" && <a href="/contest-admin">Contest</a>}
+            {session.role === "admin" && <a href="/vip-admin">VIP Services</a>}
+            {session.role === "promoter" && vipServicesEnabled && (
+              <a href={`/vip/${session.promoterSlug}`}>VIP Services</a>
+            )}
             {session.role === "promoter" && (
               <a href={`/promoter/${session.promoterSlug}`}>My QR Codes</a>
             )}
@@ -1327,6 +1342,9 @@ export function GuestListPage() {
         flagReason: guest.flagReason ?? guest.exception_reason ?? null,
         locationException: Boolean(guest.location_exception),
         confirmationCode: guest.confirmation_code ?? null,
+        vipServiceName: guest.vip_service_name ?? null,
+        vipDiscountPercent: Number(guest.vip_discount_percent ?? 0),
+        vipQuotedPriceCents: Number(guest.vip_quoted_price_cents ?? 0),
       }));
 
       setGuests(mapped);
@@ -1552,6 +1570,20 @@ export function GuestListPage() {
                   <strong>{formatDateTime(guest.registeredAt)}</strong>
                 </div>
               </div>
+
+              {guest.vipServiceName && (
+                <div className="vip-guest-banner">
+                  <span aria-hidden="true">★</span>
+                  <div>
+                    <strong>VIP GUEST — ALERT VIP HOST</strong>
+                    <small>
+                      {guest.vipServiceName}
+                      {guest.vipDiscountPercent ? ` · ${guest.vipDiscountPercent}% offer` : ""}
+                      {guest.vipQuotedPriceCents ? ` · $${(guest.vipQuotedPriceCents / 100).toFixed(2)} quoted` : ""}
+                    </small>
+                  </div>
+                </div>
+              )}
 
               {guest.flagReason && (
                 <div className="flag-note">{guest.flagReason}</div>

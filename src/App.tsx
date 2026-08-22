@@ -17,6 +17,7 @@ import {
   StatsPage,
 } from "./pages";
 import { ContestAdminPage, ContestEntryPage, ContestEventPage } from "./contest";
+import { VipAdminPage, VipServicePage } from "./vip";
 import {
   canAccessInternalPath,
   getDemoSession,
@@ -42,6 +43,7 @@ export default function App() {
     path.startsWith("/join/") ||
     path.startsWith("/event/") ||
     path.startsWith("/p/") ||
+    path.startsWith("/vip/") ||
     path === "/location-help" ||
     path === "/promoter-account" ||
     path === "/promoter-password-reset" ||
@@ -96,6 +98,10 @@ export default function App() {
     return <ContestAdminPage />;
   }
 
+  if (path === "/vip-admin") {
+    return <VipAdminPage />;
+  }
+
   if (path === "/location-help") {
     return <LocationHelpPage />;
   }
@@ -142,6 +148,11 @@ export default function App() {
     if (promoterSlug) {
       return <PromoterPage promoterSlug={promoterSlug} />;
     }
+  }
+
+  if (path.startsWith("/vip/")) {
+    const promoterSlug = path.split("/")[2]?.toLowerCase();
+    if (promoterSlug) return <VipServicePage promoterSlug={promoterSlug} />;
   }
 
   return <NotFoundPage />;

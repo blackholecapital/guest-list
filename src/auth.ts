@@ -109,5 +109,6 @@ export function canAccessInternalPath(session: DemoSession, path: string) {
   if (session.role === "door") return path === "/guest-list";
 
   return path === `/promoter/${session.promoterSlug}` ||
-    path === `/promoter/${session.promoterSlug}/stats`;
+    path === `/promoter/${session.promoterSlug}/stats` ||
+    path === `/vip/${session.promoterSlug}`;
 }

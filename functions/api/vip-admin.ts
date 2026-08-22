@@ -30,8 +30,8 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
       `).bind(venue.id).all<any>(),
       env.DB.prepare(`
         SELECT COUNT(*) AS registrations,
-          COALESCE(SUM(party_size), 0) AS total_guests,
-          COALESCE(SUM(quoted_price_cents), 0) AS quoted_value_cents,
+          COALESCE(SUM(r.party_size), 0) AS total_guests,
+          COALESCE(SUM(r.quoted_price_cents), 0) AS quoted_value_cents,
           COALESCE(SUM(CASE WHEN g.status = 'checked_in' THEN 1 ELSE 0 END), 0) AS checked_in
         FROM vip_registrations r
         JOIN guests g ON g.id = r.guest_id
